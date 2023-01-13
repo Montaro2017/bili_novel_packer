@@ -33,7 +33,7 @@ class EpubPacker {
   set creator(creator) => _opf.creator = creator;
 
   EpubPacker(this.epubFilePath) {
-    _zip.create(epubFilePath);
+    _zip.create(epubFilePath, level: Deflate.NO_COMPRESSION);
     _zip.addArchiveFile(mimetype);
     _zip.addArchiveFile(container);
   }
@@ -43,16 +43,17 @@ class EpubPacker {
   }
 
   void _beforePack() {
-    addArchiveFile(
-      ArchiveFile.string(
-        "OEBPS/toc.ncx",
-        _navigator.build().toXmlString(pretty: true),
-      ),
+    String ncx = _navigator.build().toXmlString(pretty: true);
+    var ncxFile = ArchiveFile.string(
+      "OEBPS/toc.ncx",
+      ncx,
     );
+    addArchiveFile(ncxFile);
+    String opf = _opf.build().toXmlString(pretty: true);
     addArchiveFile(
       ArchiveFile.string(
         "OEBPS/content.opf",
-        _opf.build().toXmlString(pretty: true),
+        opf,
       ),
     );
   }
