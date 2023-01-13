@@ -11,4 +11,6 @@ dev_dependencies:
 dependencies:
   archive: ^3.3.5
   http: ^0.13.5
+  path: ^1.8.3
+  uuid: ^3.0.7
   xml: ^6.2.2

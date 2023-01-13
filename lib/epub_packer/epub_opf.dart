@@ -1,6 +1,6 @@
 import 'package:xml/xml.dart';
 
-import 'epub_media_type.dart';
+import 'epub_media_type.dart' as epub_media_type;
 import 'epub_node.dart';
 
 /// content.opf
@@ -100,7 +100,7 @@ class _Manifest extends EpubChildNode {
   _Manifest(super.builder);
 
   final List<ManifestItem> _manifestList = [
-    ManifestItem("ncx", "toc.ncx", EpubMediaType.ncx)
+    ManifestItem("ncx", "toc.ncx", epub_media_type.ncx)
   ];
 
   void addManifestItem(ManifestItem item) {
