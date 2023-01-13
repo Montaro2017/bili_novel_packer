@@ -1,12 +1,17 @@
 import 'package:archive/archive_io.dart';
-import 'package:bili_novel_packer/epub_packer/epub_constant.dart';
-import 'package:bili_novel_packer/epub_packer/epub_navigator.dart';
+
+import 'epub_constant.dart';
+import 'epub_navigator.dart';
+import 'epub_opf.dart';
+
 
 class EpubPacker {
   final String epubFilePath;
   final ZipFileEncoder _zip = ZipFileEncoder();
-  // content.ncx
+  // toc.ncx
   final EpubNavigator _navigator = EpubNavigator();
+  // content.opf
+  final EpubOpenPackageFormat _opf = EpubOpenPackageFormat();
 
   EpubPacker(this.epubFilePath) {
     _zip.create(epubFilePath);
