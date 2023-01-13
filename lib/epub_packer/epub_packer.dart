@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:archive/archive_io.dart';
 
 import 'epub_constant.dart';
@@ -9,6 +8,7 @@ import 'epub_opf.dart';
 class EpubPacker {
   final String epubFilePath;
   final ZipFileEncoder _zip = ZipFileEncoder();
+  final Utf8Encoder _converter = Utf8Encoder();
 
   // toc.ncx
   final EpubNavigator _navigator = EpubNavigator();
@@ -45,7 +45,7 @@ class EpubPacker {
   }
 
   void _beforePack() {
-    var ncxUint8List = Utf8Encoder().convert(
+    var ncxUint8List = _converter.convert(
       _navigator.build().toXmlString(pretty: true),
     );
     addArchiveFile(
@@ -55,7 +55,7 @@ class EpubPacker {
         ncxUint8List,
       ),
     );
-    var opfUint8List = Utf8Encoder().convert(
+    var opfUint8List = _converter.convert(
       _opf.build().toXmlString(pretty: true),
     );
     addArchiveFile(
