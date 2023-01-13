@@ -5,6 +5,7 @@ import 'package:bili_novel_packer/epub_packer/epub_navigator.dart';
 class EpubPacker {
   final String epubFilePath;
   final ZipFileEncoder _zip = ZipFileEncoder();
+  // content.ncx
   final EpubNavigator _navigator = EpubNavigator();
 
   EpubPacker(this.epubFilePath) {
