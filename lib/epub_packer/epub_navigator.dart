@@ -11,11 +11,11 @@ class EpubNavigator implements EpubNode {
 
   String get docTitle => _docTitle.docTitle;
 
-  set docTitle(docTitle) => _docTitle.docTitle = docTitle;
+  set docTitle(String docTitle) => _docTitle.docTitle = docTitle;
 
-  String get uuid => _head.uuid;
+  String get bookUuid => _head.bookUuid;
 
-  set uuid(uuid) => _head.uuid = uuid;
+  set bookUuid(String bookUuid) => _head.bookUuid = bookUuid;
 
   EpubNavigator() {
     _head = _Head(_builder);
@@ -54,7 +54,7 @@ class EpubNavigator implements EpubNode {
 class _Head extends EpubChildNode {
 
   // uuid
-  late String uuid;
+  late String bookUuid;
 
   _Head(super.builder);
 
@@ -66,7 +66,7 @@ class _Head extends EpubChildNode {
         builder.element(
           "meta",
           attributes: {
-            "content": "urn:uuid:$uuid",
+            "content": "urn:uuid:$bookUuid",
             "name": "dtb:uid",
           },
         );

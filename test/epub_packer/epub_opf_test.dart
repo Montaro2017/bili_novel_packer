@@ -7,7 +7,7 @@ void main() {
     var opf = EpubOpenPackageFormat();
     opf.docTitle = "测试标题";
     opf.creator = "CXK";
-    opf.uuid = "dffb4170-fc27-4122-9103-aec8afd91ab7";
+    opf.bookUuid = "dffb4170-fc27-4122-9103-aec8afd91ab7";
     opf.addChapter(ManifestItem("chapter001", "chapter001.xhtml", EpubMediaType.xhtml));
     opf.addChapter(ManifestItem("chapter002", "chapter002.xhtml", EpubMediaType.xhtml));
     opf.addChapter(ManifestItem("chapter003", "chapter003.xhtml", EpubMediaType.xhtml));

@@ -11,17 +11,17 @@ class EpubOpenPackageFormat implements EpubNode {
   late final _Manifest _manifest;
   late final _Spine _spine;
 
-  String get uuid => _metaData.uuid;
+  String get bookUuid => _metaData.bookUuid;
 
-  set uuid(uuid) => _metaData.uuid = uuid;
+  set bookUuid(String bookUuid) => _metaData.bookUuid = bookUuid;
 
   String get docTitle => _metaData.docTitle;
 
-  set docTitle(docTitle) => _metaData.docTitle = docTitle;
+  set docTitle(String docTitle) => _metaData.docTitle = docTitle;
 
   String get creator => _metaData.creator;
 
-  set creator(creator) => _metaData.creator = creator;
+  set creator(String creator) => _metaData.creator = creator;
 
   EpubOpenPackageFormat() {
     _metaData = _MetaData(_builder);
@@ -68,7 +68,7 @@ class _MetaData extends EpubChildNode {
 
   String? coverContent;
   String language = "zh-CN";
-  late String uuid;
+  late String bookUuid;
   late String docTitle;
   late String creator;
 
@@ -78,7 +78,7 @@ class _MetaData extends EpubChildNode {
       builder.element(
         "dc:identifier",
         attributes: {"id": "bookId"},
-        nest: uuid,
+        nest: bookUuid,
       );
       builder.element("dc:language", nest: language);
       builder.element("dc:title", nest: docTitle);
