@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:archive/archive_io.dart';
 
 import 'epub_constant.dart';
@@ -33,7 +35,7 @@ class EpubPacker {
   set creator(creator) => _opf.creator = creator;
 
   EpubPacker(this.epubFilePath) {
-    _zip.create(epubFilePath, level: Deflate.NO_COMPRESSION);
+    _zip.create(epubFilePath);
     _zip.addArchiveFile(mimetype);
     _zip.addArchiveFile(container);
   }
@@ -43,17 +45,24 @@ class EpubPacker {
   }
 
   void _beforePack() {
-    String ncx = _navigator.build().toXmlString(pretty: true);
-    var ncxFile = ArchiveFile.string(
-      "OEBPS/toc.ncx",
-      ncx,
+    var ncxUint8List = Utf8Encoder().convert(
+      _navigator.build().toXmlString(pretty: true),
     );
-    addArchiveFile(ncxFile);
-    String opf = _opf.build().toXmlString(pretty: true);
     addArchiveFile(
-      ArchiveFile.string(
+      ArchiveFile(
+        "OEBPS/toc.ncx",
+        ncxUint8List.length,
+        ncxUint8List,
+      ),
+    );
+    var opfUint8List = Utf8Encoder().convert(
+      _opf.build().toXmlString(pretty: true),
+    );
+    addArchiveFile(
+      ArchiveFile(
         "OEBPS/content.opf",
-        opf,
+        opfUint8List.length,
+        opfUint8List,
       ),
     );
   }
