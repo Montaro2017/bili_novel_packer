@@ -1,9 +1,11 @@
 const String ncx = "application/x-dtbncx+xml";
 const String html = "text/html";
 const String xhtml = "application/xhtml+xml";
-const String jpg = "image/jpeg";
+const String jpeg = "image/jpeg";
 const String gif = "image/gif";
 const String png = "image/png";
+const String bmp = "image/bmp";
+const String webp = "image/webp";
 const String oebps = "application/oebps-package+xml";
 const String epub = "application/epub+zip";
 const String css = "text/css";

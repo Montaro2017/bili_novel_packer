@@ -6,7 +6,7 @@ import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
 
 import 'epub_constant.dart';
-import 'epub_media_type.dart' as epub_media_type;
+import '../media_type.dart' as epub_media_type;
 import 'epub_navigator.dart';
 import 'epub_opf.dart';
 
@@ -89,7 +89,7 @@ class EpubPacker {
   /// [data] 图片数据
   void addImage({
     String? id,
-    String mediaType = epub_media_type.jpg,
+    String mediaType = epub_media_type.jpeg,
     required String name,
     required Uint8List data,
   }) {

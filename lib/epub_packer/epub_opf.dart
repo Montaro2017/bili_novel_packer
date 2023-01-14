@@ -1,6 +1,6 @@
 import 'package:xml/xml.dart';
 
-import 'epub_media_type.dart' as epub_media_type;
+import '../media_type.dart' as epub_media_type;
 import 'epub_node.dart';
 
 /// content.opf
