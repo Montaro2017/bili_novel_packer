@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:archive/archive.dart';
 import 'package:bili_novel_packer/bili_novel/bili_novel_model.dart';
 import 'package:bili_novel_packer/bili_novel/bili_novel_http.dart' as bili;
@@ -61,7 +63,7 @@ class BiliNovelPacker {
       callback?.call(chapter, result);
     }
     packer.pack();
-    return dest;
+    return File(dest).absolute.path;
   }
 
   _resolveImage(
