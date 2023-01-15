@@ -90,10 +90,10 @@ ImageInfo getImageInfo(InputStreamBase isb) {
     return ImageInfo(width, height, mimeType);
   }
   // WEBP
-  if (c1 == 66 && c2 == 77) {
+  if (c1 == 0x52 && c2 == 0x49 && c3 == 0x46) {
     var bytes = isb.readBytes(27).toUint8List();
-    width = (bytes[24] & 0xFF) | (bytes[23] & 0xFF);
-    height = (bytes[26] & 0xFF) | (bytes[25] & 0xFF);
+    width = (bytes[24] & 0xFF) << 8 | (bytes[23] & 0xFF);
+    height = (bytes[26] & 0xFF) << 8 | (bytes[25] & 0xFF);
     mimeType = webp;
     return ImageInfo(width, height, mimeType);
   }
