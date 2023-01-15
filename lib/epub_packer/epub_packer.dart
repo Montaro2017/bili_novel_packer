@@ -39,6 +39,10 @@ class EpubPacker {
 
   set creator(creator) => _opf.creator = creator;
 
+  String? get cover => _opf.cover;
+
+  set cover(String? id) => _opf.cover = id;
+
   /// [epubFilePath] EPUB文件路径，实例化后文件就会被创建
   /// [bookUuid] 将被初始化
   EpubPacker(this.epubFilePath) {
@@ -74,7 +78,7 @@ class EpubPacker {
     id ??= href;
     Uint8List utf8Uint8List = _converter.convert(chapterContent);
     _zip.addArchiveFile(
-      ArchiveFile(href, utf8Uint8List.length, utf8Uint8List),
+      ArchiveFile(name, utf8Uint8List.length, utf8Uint8List),
     );
     _opf.addChapter(
       ManifestItem(id, href, mediaType),

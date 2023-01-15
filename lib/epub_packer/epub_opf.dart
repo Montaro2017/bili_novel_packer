@@ -1,6 +1,7 @@
 import 'package:xml/xml.dart';
 
 import '../media_type.dart' as epub_media_type;
+import '../media_type.dart';
 import 'epub_node.dart';
 
 /// content.opf
@@ -10,6 +11,7 @@ class EpubOpenPackageFormat implements EpubNode {
   late final _MetaData _metaData;
   late final _Manifest _manifest;
   late final _Spine _spine;
+  String? _cover;
 
   String get bookUuid => _metaData.bookUuid;
 
@@ -22,6 +24,13 @@ class EpubOpenPackageFormat implements EpubNode {
   String get creator => _metaData.creator;
 
   set creator(String creator) => _metaData.creator = creator;
+
+  String? get cover => _cover;
+
+  set cover(String? cover) {
+    _cover = cover;
+    _manifest.cover = cover;
+  }
 
   EpubOpenPackageFormat() {
     _metaData = _MetaData(_builder);
@@ -37,10 +46,6 @@ class EpubOpenPackageFormat implements EpubNode {
   void addChapter(ManifestItem item) {
     _manifest.addManifestItem(item);
     _spine.addRef(item.id);
-  }
-
-  void setCover(String id) {
-    _metaData.coverContent = id;
   }
 
   @override
@@ -83,21 +88,21 @@ class _MetaData extends EpubChildNode {
       builder.element("dc:language", nest: language);
       builder.element("dc:title", nest: docTitle);
       builder.element("dc:creator", nest: creator);
-      if (coverContent != null) {
-        builder.element(
-          "meta",
-          attributes: {
-            "name": "cover",
-            "content": coverContent!,
-          },
-        );
-      }
+      builder.element(
+        "meta",
+        attributes: {
+          "name": "cover",
+          "content": "cover-image",
+        },
+      );
     });
   }
 }
 
 class _Manifest extends EpubChildNode {
   _Manifest(super.builder);
+
+  String? cover;
 
   final List<ManifestItem> _manifestList = [
     ManifestItem("ncx", "toc.ncx", epub_media_type.ncx)
@@ -112,6 +117,13 @@ class _Manifest extends EpubChildNode {
     builder.element(
       "manifest",
       nest: () {
+        if (cover != null) {
+          builder.element("item", attributes: {
+            "id": "cover-image",
+            "href": cover!,
+            "media-type": jpeg
+          });
+        }
         for (ManifestItem item in _manifestList) {
           builder.element("item", attributes: {
             "id": item.id,

@@ -12,7 +12,7 @@ void main() {
     opf.addChapter(ManifestItem("chapter002", "chapter002.xhtml", xhtml));
     opf.addChapter(ManifestItem("chapter003", "chapter003.xhtml", xhtml));
     opf.addImage(ManifestItem("001.jpg", "images/001.jpg", jpeg));
-    opf.setCover("001.jpg");
+    opf.cover = "001.jpg";
     print(opf.build().toXmlString(pretty: true));
   });
 }

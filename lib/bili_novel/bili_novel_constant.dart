@@ -1,4 +1,4 @@
-const String domain = "https://www.linovElib.com";
+const String domain = "https://www.linovelib.com";
 
 const Map<String, String> secretMap = {
   "\uE800": "的",

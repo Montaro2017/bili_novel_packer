@@ -99,6 +99,9 @@ class _ElementFormatter implements _NodeFormatter {
         sb.write("\"");
       });
     }
+    if (source.localName == 'img') {
+      sb.write("/");
+    }
     sb.write(">");
     return sb.toString();
   }
