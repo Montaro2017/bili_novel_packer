@@ -54,7 +54,6 @@ class Chapter {
   @override
   bool operator ==(Object other) {
     if (other is! Chapter) return false;
-    if (this == other) return true;
     if (hashCode == other.hashCode) return true;
     return false;
   }
