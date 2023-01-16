@@ -49,7 +49,7 @@ class Chapter {
   }
 
   @override
-  int get hashCode => [name, url].hashCode;
+  int get hashCode => [name, url].toString().hashCode;
 
   @override
   bool operator ==(Object other) {

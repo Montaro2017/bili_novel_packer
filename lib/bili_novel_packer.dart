@@ -75,6 +75,7 @@ class BiliNovelPacker {
     for (var img in imgList) {
       index.increment();
       String src = img.attributes["src"]!;
+      // TODO: fix get方法不稳定
       var data = (await get(Uri.parse(src))).bodyBytes;
       var imageInfo = getImageInfo(InputStream(data));
       String name = "images/${index.val.toString().padLeft(4, "0")}.jpg";
