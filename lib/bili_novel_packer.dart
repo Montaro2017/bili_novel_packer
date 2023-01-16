@@ -52,7 +52,8 @@ class BiliNovelPacker {
       Document? chapterDoc = await getChapter(chapter);
       if (chapterDoc != null) {
         await _resolveImage(chapterDoc, packer, imageIndex);
-        String chapterName = "OEBPS/${chapterId.toString().padLeft(4, "0")}.xhtml";
+        String chapterName =
+            "OEBPS/${chapterId.toString().padLeft(4, "0")}.xhtml";
         packer.addChapter(
           name: chapterName,
           title: chapter.name,
@@ -75,6 +76,9 @@ class BiliNovelPacker {
     for (var img in imgList) {
       index.increment();
       String src = img.attributes["src"]!;
+      if (src.startsWith("//")) {
+        src = "https:$src";
+      }
       // TODO: fix get方法不稳定
       var data = (await get(Uri.parse(src))).bodyBytes;
       var imageInfo = getImageInfo(InputStream(data));
