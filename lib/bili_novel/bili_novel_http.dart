@@ -1,3 +1,4 @@
+import 'package:bili_novel_packer/http_retry.dart';
 import 'package:html/dom.dart';
 import 'package:http/http.dart';
 import 'package:bili_novel_packer/extension/node_wrap_extension.dart';
@@ -12,13 +13,13 @@ const String html =
 
 Future<Novel> getNovel(int id) async {
   String url = "$domain/novel/$id.html";
-  var resp = (await get(Uri.parse(url)));
+  var resp = (await retryGet(url));
   return parser.parseNovel(id, resp.body);
 }
 
 Future<Catalog> getCatalog(int id) async {
   String url = "$domain/novel/$id/catalog";
-  var resp = (await get(Uri.parse(url)));
+  var resp = (await retryGet(url));
   return parser.parseCatalog(resp.body);
 }
 
@@ -39,7 +40,7 @@ Future<Document?> getChapter(String url) async {
 }
 
 Future<ChapterPage> _getChapterPage(String url) async {
-  var req = (await get(Uri.parse(url)));
+  var req = (await retryGet(url));
   return parser.parsePage(req.body);
 }
 
@@ -56,7 +57,8 @@ void _replaceSecretText(Element element) {
 String _replaceText(String str) {
   StringBuffer sb = StringBuffer();
   for (var i = 0; i < str.length; i++) {
-    sb.write(secretMap[str[i]] ?? str[i]);
+    String? replacement = secretMap[str[i]] ?? str[i];
+    sb.write(replacement);
   }
   return sb.toString();
 }

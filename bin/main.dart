@@ -26,13 +26,13 @@ Future<void> start() async {
   for (var volume in catalog.volumes) {
     String file = "${novel.title} ${volume.name}.epub";
     String dest = "$dir\\$file";
-    futures.add(
-      packer.pack(volume, dest).then((path) {
-        print("[${volume.name}] 打包完成: $path");
-      }),
-    );
+    // futures.add(
+    await packer.pack(volume, dest).then((path) {
+      print("[${volume.name}] 打包完成: $path");
+    });
+    // );
   }
-  await Future.wait(futures);
+  // await Future.wait(futures);
 }
 
 int readNovelId() {

@@ -13,5 +13,6 @@ dependencies:
   html: ^0.15.1
   http: ^0.13.5
   path: ^1.8.3
+  retry: ^3.1.0
   uuid: ^3.0.7
   xml: ^6.2.2

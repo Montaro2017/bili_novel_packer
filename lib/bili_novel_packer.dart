@@ -5,10 +5,13 @@ import 'package:bili_novel_packer/bili_novel/bili_novel_model.dart';
 import 'package:bili_novel_packer/bili_novel/bili_novel_http.dart' as bili;
 import 'package:bili_novel_packer/epub_packer/epub_packer.dart';
 import 'package:bili_novel_packer/extension/node_format_extension.dart';
+import 'package:bili_novel_packer/media_type.dart';
 import 'package:html/dom.dart';
 import 'package:http/http.dart';
+import 'package:http/retry.dart';
 
 import 'bili_novel/bili_novel_util.dart';
+import 'http_retry.dart';
 
 class BiliNovelPacker {
   final int id;
@@ -47,22 +50,29 @@ class BiliNovelPacker {
     packer.docTitle = "${novel.title} ${volume.name}";
     packer.creator = novel.author;
     int chapterId = 0;
+    List<Future> futures = [];
     for (var chapter in volume.chapters) {
-      chapterId++;
-      Document? chapterDoc = await getChapter(chapter);
-      if (chapterDoc != null) {
-        await _resolveImage(chapterDoc, packer, imageIndex);
-        String chapterName =
-            "OEBPS/${chapterId.toString().padLeft(4, "0")}.xhtml";
-        packer.addChapter(
-          name: chapterName,
-          title: chapter.name,
-          chapterContent: chapterDoc.format(),
-        );
-      }
-      bool result = chapterDoc != null;
-      callback?.call(chapter, result);
+      futures.add(
+        Future(() async {
+          print("\t下载:${chapter.name}");
+          chapterId++;
+          Document? chapterDoc = await getChapter(chapter);
+          if (chapterDoc != null) {
+            futures.add(_resolveImage(chapterDoc, packer, imageIndex));
+            String chapterName =
+                "OEBPS/${chapterId.toString().padLeft(4, "0")}.xhtml";
+            packer.addChapter(
+              name: chapterName,
+              title: chapter.name,
+              chapterContent: chapterDoc.format(),
+            );
+          }
+          bool result = chapterDoc != null;
+          callback?.call(chapter, result);
+        }),
+      );
     }
+    await Future.wait(futures);
     packer.pack();
     return File(dest).absolute.path;
   }
@@ -72,31 +82,35 @@ class BiliNovelPacker {
     EpubPacker packer,
     _Index index,
   ) async {
-    var imgList = doc.querySelectorAll("img");
-    for (var img in imgList) {
-      index.increment();
-      String src = img.attributes["src"]!;
-      if (src.startsWith("//")) {
-        src = "https:$src";
+    return Future(() async {
+      var imgList = doc.querySelectorAll("img");
+      for (var img in imgList) {
+        index.increment();
+        String src = img.attributes["src"]!;
+        if (src.startsWith("//")) {
+          src = "https:$src";
+        }
+        // TODO: fix get方法不稳定
+        print("开始下载 $src");
+        var data = (await retryGet(src)).bodyBytes;
+        print("下载完成 $src");
+        var imageInfo = getImageInfo(InputStream(data), src);
+        String name = "images/${index.val.toString().padLeft(4, "0")}.jpg";
+        String pathInEpub = "OEBPS/$name";
+        packer.addImage(
+          id: name,
+          name: pathInEpub,
+          data: data,
+          mediaType: imageInfo?.mimeType ?? jpeg,
+        );
+        img.replaceWith(Element.tag("img")..attributes["src"] = name);
+        // 设置封面
+        if (imageInfo != null && imageInfo.ratio < 1 && packer.cover == null) {
+          packer.cover = name;
+        }
       }
-      // TODO: fix get方法不稳定
-      var data = (await get(Uri.parse(src))).bodyBytes;
-      var imageInfo = getImageInfo(InputStream(data));
-      String name = "images/${index.val.toString().padLeft(4, "0")}.jpg";
-      String pathInEpub = "OEBPS/$name";
-      packer.addImage(
-        id: name,
-        name: pathInEpub,
-        data: data,
-        mediaType: imageInfo.mimeType,
-      );
-      img.replaceWith(Element.tag("img")..attributes["src"] = name);
-      // 设置封面
-      if (imageInfo.ratio < 1 && packer.cover == null) {
-        packer.cover = name;
-      }
-    }
-    return;
+      return;
+    });
   }
 }
 

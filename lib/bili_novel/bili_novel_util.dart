@@ -40,7 +40,7 @@ class ImageInfo {
   }
 }
 
-ImageInfo getImageInfo(InputStreamBase isb) {
+ImageInfo? getImageInfo(InputStreamBase isb, [String? src]) {
   int width;
   int height;
   String mimeType;
@@ -97,7 +97,8 @@ ImageInfo getImageInfo(InputStreamBase isb) {
     mimeType = webp;
     return ImageInfo(width, height, mimeType);
   }
-  throw "Unsupported image type";
+  return null;
+  // throw "Unsupported image type $src";
 }
 
 int _readInt(InputStreamBase isb, int count, bool bigEndian) {
