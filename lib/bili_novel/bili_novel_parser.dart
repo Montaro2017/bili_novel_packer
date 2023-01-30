@@ -22,7 +22,7 @@ Catalog parseCatalog(String html) {
   var doc = parse(html);
   Catalog catalog = Catalog();
   var children = doc.querySelector("ul.chapter-list")!.children;
-  Volume? volume = null;
+  Volume? volume;
   for (var child in children) {
     if (child.classes.contains("volume")) {
       if (volume != null) {

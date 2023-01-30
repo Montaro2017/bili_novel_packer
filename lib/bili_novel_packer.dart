@@ -1,127 +1,143 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
-import 'package:bili_novel_packer/bili_novel/bili_novel_model.dart';
-import 'package:bili_novel_packer/bili_novel/bili_novel_http.dart' as bili;
+import 'package:bili_novel_packer/bili_novel/bili_novel_util.dart';
 import 'package:bili_novel_packer/epub_packer/epub_packer.dart';
-import 'package:bili_novel_packer/extension/node_format_extension.dart';
+import 'package:bili_novel_packer/http_retry.dart';
 import 'package:bili_novel_packer/media_type.dart';
 import 'package:html/dom.dart';
-import 'package:http/http.dart';
-import 'package:http/retry.dart';
 
-import 'bili_novel/bili_novel_util.dart';
-import 'http_retry.dart';
+import 'bili_novel/bili_novel_http.dart' as bili_http;
+import 'bili_novel/bili_novel_model.dart';
 
 class BiliNovelPacker {
   final int id;
-  late Novel novel;
-  late Catalog catalog;
 
   BiliNovelPacker(this.id);
 
   Future<Novel> getNovel() async {
-    novel = await bili.getNovel(id);
-    return novel;
+    return bili_http.getNovel(id);
   }
 
   Future<Catalog> getCatalog() async {
-    catalog = await bili.getCatalog(id);
-    return catalog;
+    return bili_http.getCatalog(id);
   }
 
-  Future<Document?> getChapter(Chapter chapter) async {
-    if (chapter.url == null || chapter.url!.isEmpty) {
-      chapter.url = await bili.getChapterUrl(catalog, chapter);
-    }
-    if (chapter.url == null) {
-      return null;
-    }
-    return await bili.getChapter(chapter.url!);
-  }
-
-  Future<String> pack(
-    Volume volume,
-    String dest, {
-    Function(Chapter chapter, bool result)? callback,
-  }) async {
-    EpubPacker packer = EpubPacker(dest);
-    _Index imageIndex = _Index();
-    packer.docTitle = "${novel.title} ${volume.name}";
-    packer.creator = novel.author;
-    int chapterId = 0;
-    List<Future> futures = [];
+  Future<void> packVolume(Volume volume, Catalog catalog, String dest) async {
+    List<Future<_ChapterInfo?>> futures = [];
+    EpubPacker epubPacker = EpubPacker(dest);
+    _ImageHandler imageHandler = _ImageHandler(epubPacker);
+    _ChapterHandler chapterHandler = _ChapterHandler(epubPacker, imageHandler);
     for (var chapter in volume.chapters) {
+      futures.add(chapterHandler.resolveChapter(catalog, chapter));
+    }
+    List<_ChapterInfo?> chapterDocumentList = await Future.wait(futures);
+    // epubPacker.pack();
+  }
+}
+
+class _ChapterHandler {
+  final EpubPacker packer;
+  final _ImageHandler imageHandler;
+
+  int chapterCount = 0;
+
+  _ChapterHandler(this.packer, this.imageHandler);
+
+  Future<_ChapterInfo?> resolveChapter(Catalog catalog, Chapter chapter) async {
+    Document? chapterDocument = await _resolveChapter(
+      packer,
+      imageHandler,
+      catalog,
+      chapter,
+    );
+    if (chapterDocument == null) return null;
+    // return _ChapterInfo(title, content)
+  }
+
+  Future<Document?> _resolveChapter(
+    EpubPacker epubPacker,
+    _ImageHandler imageHandler,
+    Catalog catalog,
+    Chapter chapter,
+  ) async {
+    chapter.url = await bili_http.getChapterUrl(catalog, chapter);
+    if (chapter.url == null || chapter.url!.isEmpty) return null;
+    Document document = await bili_http.getChapter(chapter.url!);
+    await _resolveChapterImage(document, imageHandler);
+    return document;
+  }
+
+  Future<void> _resolveChapterImage(
+    Document document,
+    _ImageHandler imageHandler,
+  ) async {
+    List<Element> imgList = document.querySelectorAll("img");
+    List<Future> futures = [];
+    for (var img in imgList) {
       futures.add(
         Future(() async {
-          print("\t下载:${chapter.name}");
-          chapterId++;
-          Document? chapterDoc = await getChapter(chapter);
-          if (chapterDoc != null) {
-            futures.add(_resolveImage(chapterDoc, packer, imageIndex));
-            String chapterName =
-                "OEBPS/${chapterId.toString().padLeft(4, "0")}.xhtml";
-            packer.addChapter(
-              name: chapterName,
-              title: chapter.name,
-              chapterContent: chapterDoc.format(),
-            );
+          String? src = img.attributes["src"];
+          if (src == null || src.isEmpty) return;
+          if (src.startsWith("//")) {
+            src = "https:$src";
           }
-          bool result = chapterDoc != null;
-          callback?.call(chapter, result);
+          String replaceSrc = await imageHandler.resolveImage(src);
+          img.attributes["src"] = replaceSrc;
         }),
       );
     }
     await Future.wait(futures);
-    packer.pack();
-    return File(dest).absolute.path;
-  }
-
-  _resolveImage(
-    Document doc,
-    EpubPacker packer,
-    _Index index,
-  ) async {
-    return Future(() async {
-      var imgList = doc.querySelectorAll("img");
-      for (var img in imgList) {
-        index.increment();
-        String src = img.attributes["src"]!;
-        if (src.startsWith("//")) {
-          src = "https:$src";
-        }
-        // TODO: fix get方法不稳定
-        print("开始下载 $src");
-        var data = (await retryGet(src)).bodyBytes;
-        print("下载完成 $src");
-        var imageInfo = getImageInfo(InputStream(data), src);
-        String name = "images/${index.val.toString().padLeft(4, "0")}.jpg";
-        String pathInEpub = "OEBPS/$name";
-        packer.addImage(
-          id: name,
-          name: pathInEpub,
-          data: data,
-          mediaType: imageInfo?.mimeType ?? jpeg,
-        );
-        img.replaceWith(Element.tag("img")..attributes["src"] = name);
-        // 设置封面
-        if (imageInfo != null && imageInfo.ratio < 1 && packer.cover == null) {
-          packer.cover = name;
-        }
-      }
-      return;
-    });
   }
 }
 
-class _Index {
-  int _index;
+class _ChapterInfo {
+  String title;
+  String content;
+  String name;
 
-  _Index([this._index = 0]);
+  _ChapterInfo(this.title, this.name, this.content);
+}
 
-  int increment() {
-    return ++_index;
+class _ImageHandler {
+  final EpubPacker packer;
+
+  String? cover;
+  int imageCount = 0;
+  Map<String, Uint8List> imageCache = {};
+  Map<String, ImageInfo?> imageInfoMap = {};
+
+  _ImageHandler(this.packer);
+
+  Future<String> resolveImage(String src) async {
+    Uint8List imgData = await _getImageData(src);
+    ImageInfo? imageInfo = _getImageInfo(src, imgData);
+
+    imageCache[src] = imgData;
+    imageInfoMap[src] = imageInfo;
+
+    String relativeName = "images/${imageCount.toString().padLeft(4, "0")}.jpg";
+    String absoluteName = "OEBPS/$relativeName";
+
+    packer.addImage(
+      name: absoluteName,
+      data: imgData,
+      mediaType: imageInfo?.mimeType ?? jpeg,
+    );
+
+    // 根据图片比例猜测封面
+    if (imageInfo != null && imageInfo.ratio < 1 && cover == null) {
+      cover = relativeName;
+    }
+    imageCount++;
+    return relativeName;
   }
 
-  int get val => _index;
+  Future<Uint8List> _getImageData(String src) async {
+    return imageCache[src] ?? (await retryGet(src)).bodyBytes;
+  }
+
+  ImageInfo? _getImageInfo(String src, Uint8List imgData) {
+    return imageInfoMap[src] ?? getImageInfo(InputStream(imgData));
+  }
 }

@@ -14,11 +14,11 @@ void main(List<String> arguments) async {
 
 Future<void> start() async {
   int id = readNovelId();
-  BiliNovelPacker packer = BiliNovelPacker(id);
-  Novel novel = await getNovel(packer);
+  BiliNovelPacker biliNovelPacker = BiliNovelPacker(id);
+  Novel novel = await getNovel(biliNovelPacker);
   print("");
   printNovel(novel);
-  Catalog catalog = await getCatalog(packer);
+  Catalog catalog = await getCatalog(biliNovelPacker);
   pause();
   List<Future> futures = [];
   String dir = novel.title;
@@ -27,8 +27,8 @@ Future<void> start() async {
     String file = "${novel.title} ${volume.name}.epub";
     String dest = "$dir\\$file";
     // futures.add(
-    await packer.pack(volume, dest).then((path) {
-      print("[${volume.name}] 打包完成: $path");
+    await biliNovelPacker.packVolume(volume, catalog, dest).then((_) {
+      print("[${volume.name}] 打包完成: $dest");
     });
     // );
   }
@@ -86,7 +86,7 @@ void test() {
         // print(catalog);
         for (var volume in catalog.volumes) {
           String dest = "${novel.title}/${novel.title} ${volume.name}.epub";
-          packer.pack(volume, dest);
+          packer.packVolume(volume, catalog, dest);
         }
       });
     });

@@ -23,7 +23,7 @@ Future<Catalog> getCatalog(int id) async {
   return parser.parseCatalog(resp.body);
 }
 
-Future<Document?> getChapter(String url) async {
+Future<Document> getChapter(String url) async {
   Document doc = Document.html(html);
   String? nextPageUrl = url;
   do {
