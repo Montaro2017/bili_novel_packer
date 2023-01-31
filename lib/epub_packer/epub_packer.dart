@@ -1,14 +1,14 @@
 import 'dart:convert';
 import 'dart:typed_data';
-
+import 'package:uuid/uuid.dart';
 import 'package:archive/archive_io.dart';
 import 'package:path/path.dart' as path;
-import 'package:uuid/uuid.dart';
 
-import 'epub_constant.dart';
-import '../media_type.dart' as epub_media_type;
-import 'epub_navigator.dart';
-import 'epub_opf.dart';
+import 'package:bili_novel_packer/epub_packer/epub_opf.dart';
+import 'package:bili_novel_packer/epub_packer/epub_constant.dart';
+import 'package:bili_novel_packer/epub_packer/epub_navigator.dart';
+
+import 'package:bili_novel_packer/media_type.dart' as epub_media_type;
 
 class EpubPacker {
   final String epubFilePath;

@@ -18,7 +18,7 @@ void main() {
     test("getChapter", () async {
       String url = "https://www.linovelib.com/novel/2547/123015.html";
       var doc = (await bili_http.getChapter(url));
-      print(doc?.format());
+      print(doc.format());
     });
 
     test("NodeExtension", () {

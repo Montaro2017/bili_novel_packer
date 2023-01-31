@@ -1,8 +1,7 @@
-import 'package:html/parser.dart' show parse;
 import 'package:html/dom.dart';
-
-import 'bili_novel_constant.dart';
-import 'bili_novel_model.dart';
+import 'package:html/parser.dart' show parse;
+import 'package:bili_novel_packer/bili_novel/bili_novel_model.dart';
+import 'package:bili_novel_packer/bili_novel/bili_novel_constant.dart';
 
 Novel parseNovel(int id, String html) {
   var doc = parse(html);

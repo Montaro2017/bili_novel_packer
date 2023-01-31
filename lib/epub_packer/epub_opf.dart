@@ -1,8 +1,6 @@
+import 'package:bili_novel_packer/epub_packer/epub_node.dart';
+import 'package:bili_novel_packer/media_type.dart' as media_type;
 import 'package:xml/xml.dart';
-
-import '../media_type.dart' as epub_media_type;
-import '../media_type.dart';
-import 'epub_node.dart';
 
 /// content.opf
 class EpubOpenPackageFormat implements EpubNode {
@@ -105,7 +103,7 @@ class _Manifest extends EpubChildNode {
   String? cover;
 
   final List<ManifestItem> _manifestList = [
-    ManifestItem("ncx", "toc.ncx", epub_media_type.ncx)
+    ManifestItem("ncx", "toc.ncx", media_type.ncx)
   ];
 
   void addManifestItem(ManifestItem item) {
@@ -118,18 +116,24 @@ class _Manifest extends EpubChildNode {
       "manifest",
       nest: () {
         if (cover != null) {
-          builder.element("item", attributes: {
-            "id": "cover-image",
-            "href": cover!,
-            "media-type": jpeg
-          });
+          builder.element(
+            "item",
+            attributes: {
+              "id": "cover-image",
+              "href": cover!,
+              "media-type": media_type.jpeg
+            },
+          );
         }
         for (ManifestItem item in _manifestList) {
-          builder.element("item", attributes: {
-            "id": item.id,
-            "href": item.href,
-            "media-type": item.mediaType
-          });
+          builder.element(
+            "item",
+            attributes: {
+              "id": item.id,
+              "href": item.href,
+              "media-type": item.mediaType
+            },
+          );
         }
       },
     );

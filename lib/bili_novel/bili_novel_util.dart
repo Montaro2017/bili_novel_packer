@@ -1,7 +1,7 @@
 import 'package:archive/archive.dart';
+import 'package:bili_novel_packer/bili_novel/bili_novel_http.dart';
+import 'package:bili_novel_packer/bili_novel/bili_novel_model.dart';
 import 'package:bili_novel_packer/media_type.dart';
-
-import 'bili_novel_model.dart';
 
 Chapter? getPrevChapter(Catalog catalog, Chapter chapter) {
   List<Chapter> chapters = catalog.volumes
@@ -23,6 +23,42 @@ Chapter? getNextChapter(Catalog catalog, Chapter chapter) {
   int pos = chapters.indexOf(chapter);
   if (pos < 0 || pos > chapters.length - 1) return null;
   return chapters[pos + 1];
+}
+
+Future<String?> _getPrevChapterUrl(String url) async {
+  return (await getChapterPage(url)).prevChapterUrl;
+}
+
+Future<String?> _getNextChapterUrl(String url) async {
+  String? nextPageUrl = url;
+  do {
+    var page = await getChapterPage(nextPageUrl!);
+    nextPageUrl = page.nextPageUrl;
+    if (nextPageUrl == null) {
+      return page.nextChapterUrl;
+    }
+  } while (true);
+}
+
+/// 通过目录[catalog]和章节[chapter]获取章节的url
+/// 其原理是通过上下章节页面中的“上一章”和“下一章”的链接获取
+/// 可能返回空
+Future<String?> getChapterUrl(Catalog catalog, Chapter chapter) async {
+  String? chapterUrl = chapter.url;
+  if (chapterUrl != null && chapterUrl.isNotEmpty) return chapterUrl;
+
+  Chapter? nextChapter = getNextChapter(catalog, chapter);
+  chapterUrl = nextChapter?.url == null
+      ? null
+      : await _getPrevChapterUrl(nextChapter!.url!);
+  if (chapterUrl != null && chapterUrl.isNotEmpty) return chapterUrl;
+
+  Chapter? prevChapter = getPrevChapter(catalog, chapter);
+  chapterUrl = prevChapter?.url == null
+      ? null
+      : await _getNextChapterUrl(prevChapter!.url!);
+
+  return chapterUrl;
 }
 
 class ImageInfo {

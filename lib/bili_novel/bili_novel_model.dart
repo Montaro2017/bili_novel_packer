@@ -1,5 +1,4 @@
 import 'package:html/dom.dart';
-import 'package:path/path.dart';
 
 class Novel {
   late int id;

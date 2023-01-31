@@ -1,6 +1,6 @@
 import 'package:xml/xml.dart';
+import 'package:bili_novel_packer/epub_packer/epub_node.dart';
 
-import 'epub_node.dart';
 
 /// toc.ncx
 class EpubNavigator implements EpubNode {

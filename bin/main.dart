@@ -14,7 +14,7 @@ void main(List<String> arguments) async {
 
 Future<void> start() async {
   int id = readNovelId();
-  BiliNovelPacker biliNovelPacker = BiliNovelPacker(id);
+  BiliNovelVolumePacker biliNovelPacker = BiliNovelVolumePacker(id);
   Novel novel = await getNovel(biliNovelPacker);
   print("");
   printNovel(novel);
@@ -27,7 +27,7 @@ Future<void> start() async {
     String file = "${novel.title} ${volume.name}.epub";
     String dest = "$dir\\$file";
     // futures.add(
-    await biliNovelPacker.packVolume(volume, catalog, dest).then((_) {
+    await biliNovelPacker.pack(volume, catalog, dest).then((_) {
       print("[${volume.name}] 打包完成: $dest");
     });
     // );
@@ -55,7 +55,7 @@ int readNovelId() {
   return id;
 }
 
-Future<Novel> getNovel(BiliNovelPacker packer) async {
+Future<Novel> getNovel(BiliNovelVolumePacker packer) async {
   return await packer.getNovel();
 }
 
@@ -64,7 +64,7 @@ void pause() {
   stdin.readLineSync();
 }
 
-Future<Catalog> getCatalog(BiliNovelPacker packer) async {
+Future<Catalog> getCatalog(BiliNovelVolumePacker packer) async {
   return await packer.getCatalog();
 }
 
@@ -79,14 +79,13 @@ void printNovel(Novel novel) {
 void test() {
   runZonedGuarded(() {
     int id = 2704;
-    BiliNovelPacker packer = BiliNovelPacker(id);
+    BiliNovelVolumePacker packer = BiliNovelVolumePacker(id);
     packer.getNovel().then((novel) {
       print(novel);
       packer.getCatalog().then((catalog) {
-        // print(catalog);
         for (var volume in catalog.volumes) {
           String dest = "${novel.title}/${novel.title} ${volume.name}.epub";
-          packer.packVolume(volume, catalog, dest);
+          packer.pack(volume, catalog, dest);
         }
       });
     });
