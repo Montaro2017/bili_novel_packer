@@ -10,3 +10,19 @@
 
 [点此下载](https://gitee.com/Montaro2017/bili_novel_packer/releases)
 
+## 编译
+
+由于Dart暂不支持交叉编译，因此仅提供windows版本的编译产物，如需在其他系统上使用，请自行下载编译。
+
+### windows
+执行目录下的compile.bat即可
+或者执行
+```
+dart compile exe bin/main.dart -o ./build/bili_novel_packer.exe
+```
+
+### 其他系统
+同windows，修改打包后的文件名即可
+```
+dart compile exe bin/main.dart -o ./build/bili_novel_packer
+```
