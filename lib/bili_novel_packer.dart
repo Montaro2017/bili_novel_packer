@@ -61,7 +61,7 @@ class BiliNovelVolumePacker {
       packer.addChapter(
         name: chapterPath,
         title: chapterInfo.chapter.name,
-        chapterContent: chapterInfo.document!.format(),
+        chapterContent: chapterInfo.document!.outerHtml,
       );
       _resolveCover(chapterInfo.imageSrcList);
     }

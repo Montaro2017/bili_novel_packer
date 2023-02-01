@@ -51,7 +51,7 @@ void _replaceSecretText(Element element) {
       _replaceSecretText(child);
     }
   } else {
-    element.text = _replaceText(element.text);
+    element.innerHtml = _replaceText(element.innerHtml);
   }
 }
 
