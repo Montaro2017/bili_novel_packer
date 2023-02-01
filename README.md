@@ -10,12 +10,20 @@
 
 [点此下载](https://gitee.com/Montaro2017/bili_novel_packer/releases)
 
+## 使用
+双击exe或者使用命令提示符都可。
+
+![01](./images/1.bmp)
+
+![02](./images/2.bmp)
+
 ## 编译
 
 由于Dart暂不支持交叉编译，因此仅提供windows版本的编译产物，如需在其他系统上使用，请自行下载编译。
 
 ### windows
-执行目录下的compile.bat即可
+执行目录下的[**compile.bat**](./compile.bat)即可。
+
 或者执行
 ```
 dart compile exe bin/main.dart -o ./build/bili_novel_packer.exe
