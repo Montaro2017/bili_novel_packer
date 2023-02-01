@@ -95,12 +95,12 @@ class ConsoleCallback extends PackerCallback {
 
   @override
   void onAfterPack(Volume volume, String dest) {
-    Console.overwriteLine("打包完成: ${volume.name} $dest\n");
+    String absoluteDest = File(dest).absolute.path;
+    Console.overwriteLine("打包完成: ${volume.name} 文件保存路径: $absoluteDest\n");
   }
 
   @override
   void onAfterResolveImage(String src, String relativeImgPath) {
-    message = "下载完成 $src";
   }
 
   @override
