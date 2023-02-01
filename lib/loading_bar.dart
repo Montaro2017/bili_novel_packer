@@ -6,8 +6,6 @@ typedef LoadingBarUpdateCallback = void Function();
 
 class MyLoadingBar {
   Timer? _timer;
-  bool started = true;
-  bool stopped = true;
   String position = '<';
   late String lastPosition;
   late NextPositionLoadingBar nextPosition;
@@ -20,7 +18,6 @@ class MyLoadingBar {
 
   /// Starts the Loading Bar
   void start() {
-    stopped = false;
     Console.hideCursor();
     _timer = Timer.periodic(const Duration(milliseconds: 75), (timer) {
       nextPosition();
@@ -38,14 +35,12 @@ class MyLoadingBar {
       position = message;
       update();
     }
-    stopped = true;
     Console.showCursor();
     print('');
   }
 
   /// Updates the Loading Bar
   void update() {
-    if (stopped) return;
     Console.overwriteLine(position);
     callback?.call();
   }
