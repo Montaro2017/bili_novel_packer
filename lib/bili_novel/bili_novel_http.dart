@@ -46,13 +46,7 @@ Future<ChapterPage> getChapterPage(String url) async {
 }
 
 void _replaceSecretText(Element element) {
-  if (element.children.isNotEmpty) {
-    for (var child in element.children) {
-      _replaceSecretText(child);
-    }
-  } else {
     element.innerHtml = _replaceText(element.innerHtml);
-  }
 }
 
 String _replaceText(String str) {
