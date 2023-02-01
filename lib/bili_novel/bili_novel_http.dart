@@ -6,7 +6,7 @@ import 'package:bili_novel_packer/http_retry.dart';
 import 'package:html/dom.dart';
 
 const String html =
-    "<html lang='zh-CN'><head><title></title></head><body></body></html>";
+    "<html lang='zh-CN'><body></body></html>";
 
 /// 通过小说[id]获取对应小说详情
 Future<Novel> getNovel(int id) async {

@@ -4,13 +4,12 @@ import 'dart:io';
 import 'package:bili_novel_packer/bili_novel/bili_novel_http.dart' as bili_http;
 import 'package:bili_novel_packer/bili_novel/bili_novel_model.dart';
 import 'package:bili_novel_packer/bili_novel_packer.dart';
+import 'package:bili_novel_packer/loading_bar.dart';
 import 'package:bili_novel_packer/packer_callback.dart';
 import 'package:console/console.dart';
 
 void main(List<String> arguments) async {
-  start().then((_) {
-    print("\n全部任务已完成!");
-  });
+  start();
 }
 
 Future<void> start() async {
@@ -28,10 +27,12 @@ Future<void> start() async {
       catalog: catalog,
       volume: volume,
       dest: dest,
-      // callback: callback,
+      callback: callback,
     );
     await packer.pack();
   }
+  (callback as ConsoleCallback).stop("全部任务已完成！");
+  exit(0);
 }
 
 int readNovelId() {
@@ -70,7 +71,7 @@ void printNovel(Novel novel) {
 String getDest(Novel novel, Volume volume) {
   String name = ensureFileName(novel.title);
   String epub = ensureFileName("$name ${volume.name}.epub");
-  return "$name/$epub";
+  return "$name\\$epub";
 }
 
 String ensureFileName(String name) {
@@ -78,53 +79,69 @@ String ensureFileName(String name) {
 }
 
 class ConsoleCallback extends PackerCallback {
-  @override
-  void onAfterBeforeResolveChapter(Chapter chapter) {
-    print("下载章节: ${chapter.name} ${chapter.url}");
+  String? _message;
+  bool stopped = false;
+  late MyLoadingBar bar = MyLoadingBar(callback: writeMessage);
+
+  set message(String? message) {
+    _message = message;
+    bar.update();
   }
+
+  String? get message => _message;
+
+  @override
+  void onAfterResolveChapter(Chapter chapter) {}
 
   @override
   void onAfterPack(Volume volume, String dest) {
-    print("打包完成: ${volume.name} $dest");
+    Console.overwriteLine("打包完成: ${volume.name} $dest\n");
   }
 
   @override
   void onAfterResolveImage(String src, String relativeImgPath) {
-    print("图片下载完成: $src $relativeImgPath");
+    message = "下载完成 $src";
   }
 
   @override
   void onBeforePack(Volume volume, String dest) {
-    print("[开始打包]: ${volume.name}");
+    print("开始打包 ${volume.name}");
   }
 
   @override
   void onBeforeResolveChapter(Chapter chapter) {
-    // print("章节下载完成: ${chapter.name}");
+    message = "下载章节 ${chapter.name}";
   }
 
   @override
   void onBeforeResolveImage(String src) {
-    print("下载图片: $src");
+    message = "下载图片 $src";
   }
 
   @override
-  void onChapterUrlEmpty(Chapter chapter) {
-    // print("章节URL为空: ${chapter.name}");
-  }
+  void onChapterUrlEmpty(Chapter chapter) {}
 
   @override
   void onError(error, {StackTrace? stackTrace}) {
-    print("发生错误:$error");
+    print(error);
     print(stackTrace);
   }
 
   @override
-  void onSetCover(String src, String relativePath) {
-    print("设置封面: $src");
-  }
+  void onSetCover(String src, String relativePath) {}
 
   ConsoleCallback() {
-    Console.init();
+    bar.start();
+  }
+
+  void writeMessage() {
+    if (stopped) return;
+    Console.write("\t${message ?? ""}");
+  }
+
+  void stop([String? message]) {
+    stopped = true;
+    Console.overwriteLine("");
+    bar.stop(message);
   }
 }

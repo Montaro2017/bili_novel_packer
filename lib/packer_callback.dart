@@ -17,7 +17,7 @@ abstract class PackerCallback {
   void onAfterResolveImage(String src, String relativeImgPath);
 
   /// 下载章节后
-  void onAfterBeforeResolveChapter(Chapter chapter);
+  void onAfterResolveChapter(Chapter chapter);
 
   /// 打包完成
   void onAfterPack(Volume volume, String dest);

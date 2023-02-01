@@ -80,7 +80,7 @@ class BiliNovelVolumePacker {
     }
     Document chapterDocument = await http.getChapter(chapter.url!);
     List<String?> imageSrcList = await _resolveChapterImage(chapterDocument);
-    callback?.onAfterBeforeResolveChapter(chapter);
+    callback?.onAfterResolveChapter(chapter);
     return _ChapterInfo(chapter, chapterDocument, imageSrcList);
   }
 
