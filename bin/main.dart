@@ -8,11 +8,24 @@ import 'package:bili_novel_packer/loading_bar.dart';
 import 'package:bili_novel_packer/packer_callback.dart';
 import 'package:console/console.dart';
 
+const String gitUrl = "https://gitee.com/Montaro2017/bili_novel_packer";
+const String version = "0.0.1-beta";
+
 void main(List<String> arguments) async {
+  printWelcome();
   start();
 }
 
+void printWelcome() {
+  print("欢迎使用哔哩轻小说打包器!");
+  print("作者: Sparks");
+  print("当前版本: $version");
+  print("如遇报错请先查看能否正常访问 https://www.linovelib.com");
+  print("否则请至开源地址携带报错信息进行反馈: $gitUrl");
+}
+
 Future<void> start() async {
+  print("");
   int id = readNovelId();
   Novel novel = await bili_http.getNovel(id);
   print("");
@@ -36,7 +49,7 @@ Future<void> start() async {
 }
 
 int readNovelId() {
-  print("请输入id或URL");
+  print("请输入ID或URL:");
   String? line = stdin.readLineSync();
   if (line == null) {
     throw "输入内容不能为空";
@@ -46,11 +59,11 @@ int readNovelId() {
   RegExp exp = RegExp("novel/(\\d+)");
   RegExpMatch? match = exp.firstMatch(line);
   if (match == null || match.groupCount < 1) {
-    throw "请输入正确的id或URL";
+    throw "请输入正确的ID或URL";
   }
   id = int.tryParse(match.group(1)!);
   if (id == null) {
-    throw "请输入正确的id或URL";
+    throw "请输入正确的ID或URL";
   }
   return id;
 }
@@ -75,7 +88,8 @@ String getDest(Novel novel, Volume volume) {
 }
 
 String ensureFileName(String name) {
-  return name;
+  return name.replaceAllMapped(
+      "<|>|:|\"|/|\\\\|\\?|\\*|\\\\|\\|", (match) => " ");
 }
 
 class ConsoleCallback extends PackerCallback {
@@ -96,12 +110,11 @@ class ConsoleCallback extends PackerCallback {
   @override
   void onAfterPack(Volume volume, String dest) {
     String absoluteDest = File(dest).absolute.path;
-    Console.overwriteLine("打包完成: ${volume.name} 文件保存路径: $absoluteDest\n");
+    Console.overwriteLine("打包完成: ${volume.name} 文件保存路径: $absoluteDest\n\n");
   }
 
   @override
-  void onAfterResolveImage(String src, String relativeImgPath) {
-  }
+  void onAfterResolveImage(String src, String relativeImgPath) {}
 
   @override
   void onBeforePack(Volume volume, String dest) {

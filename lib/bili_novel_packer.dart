@@ -5,7 +5,6 @@ import 'package:bili_novel_packer/bili_novel/bili_novel_http.dart' as http;
 import 'package:bili_novel_packer/bili_novel/bili_novel_model.dart';
 import 'package:bili_novel_packer/bili_novel/bili_novel_util.dart' as util;
 import 'package:bili_novel_packer/epub_packer/epub_packer.dart';
-import 'package:bili_novel_packer/extension/node_format_extension.dart';
 import 'package:bili_novel_packer/http_retry.dart';
 import 'package:bili_novel_packer/packer_callback.dart';
 import 'package:html/dom.dart';
