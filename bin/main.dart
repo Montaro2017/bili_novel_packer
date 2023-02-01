@@ -1,38 +1,37 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:bili_novel_packer/bili_novel/bili_novel_http.dart' as bili_http;
 import 'package:bili_novel_packer/bili_novel/bili_novel_model.dart';
 import 'package:bili_novel_packer/bili_novel_packer.dart';
+import 'package:bili_novel_packer/packer_callback.dart';
+import 'package:console/console.dart';
 
 void main(List<String> arguments) async {
-  start().then((v) {
+  start().then((_) {
     print("\n全部任务已完成!");
   });
-
-  // test();
 }
 
 Future<void> start() async {
   int id = readNovelId();
-  BiliNovelVolumePacker biliNovelPacker = BiliNovelVolumePacker(id);
-  Novel novel = await getNovel(biliNovelPacker);
+  Novel novel = await bili_http.getNovel(id);
   print("");
   printNovel(novel);
-  Catalog catalog = await getCatalog(biliNovelPacker);
+  Catalog catalog = await bili_http.getCatalog(id);
   pause();
-  List<Future> futures = [];
-  String dir = novel.title;
-  print("下载已开始，请耐心等待...");
-  for (var volume in catalog.volumes) {
-    String file = "${novel.title} ${volume.name}.epub";
-    String dest = "$dir\\$file";
-    // futures.add(
-    await biliNovelPacker.pack(volume, catalog, dest).then((_) {
-      print("[${volume.name}] 打包完成: $dest");
-    });
-    // );
+  PackerCallback callback = ConsoleCallback();
+  for (Volume volume in catalog.volumes) {
+    String dest = getDest(novel, volume);
+    BiliNovelVolumePacker packer = BiliNovelVolumePacker(
+      novel: novel,
+      catalog: catalog,
+      volume: volume,
+      dest: dest,
+      // callback: callback,
+    );
+    await packer.pack();
   }
-  // await Future.wait(futures);
 }
 
 int readNovelId() {
@@ -55,17 +54,9 @@ int readNovelId() {
   return id;
 }
 
-Future<Novel> getNovel(BiliNovelVolumePacker packer) async {
-  return await packer.getNovel();
-}
-
 void pause() {
   print("请按回车键继续...");
   stdin.readLineSync();
-}
-
-Future<Catalog> getCatalog(BiliNovelVolumePacker packer) async {
-  return await packer.getCatalog();
 }
 
 void printNovel(Novel novel) {
@@ -76,21 +67,64 @@ void printNovel(Novel novel) {
   print(novel.description);
 }
 
-void test() {
-  runZonedGuarded(() {
-    int id = 2704;
-    BiliNovelVolumePacker packer = BiliNovelVolumePacker(id);
-    packer.getNovel().then((novel) {
-      print(novel);
-      packer.getCatalog().then((catalog) {
-        for (var volume in catalog.volumes) {
-          String dest = "${novel.title}/${novel.title} ${volume.name}.epub";
-          packer.pack(volume, catalog, dest);
-        }
-      });
-    });
-  }, (error, stack) {
-    print(error);
-    print(stack);
-  });
+String getDest(Novel novel, Volume volume) {
+  String name = ensureFileName(novel.title);
+  String epub = ensureFileName("$name ${volume.name}.epub");
+  return "$name/$epub";
+}
+
+String ensureFileName(String name) {
+  return name;
+}
+
+class ConsoleCallback extends PackerCallback {
+  @override
+  void onAfterBeforeResolveChapter(Chapter chapter) {
+    print("下载章节: ${chapter.name} ${chapter.url}");
+  }
+
+  @override
+  void onAfterPack(Volume volume, String dest) {
+    print("打包完成: ${volume.name} $dest");
+  }
+
+  @override
+  void onAfterResolveImage(String src, String relativeImgPath) {
+    print("图片下载完成: $src $relativeImgPath");
+  }
+
+  @override
+  void onBeforePack(Volume volume, String dest) {
+    print("[开始打包]: ${volume.name}");
+  }
+
+  @override
+  void onBeforeResolveChapter(Chapter chapter) {
+    // print("章节下载完成: ${chapter.name}");
+  }
+
+  @override
+  void onBeforeResolveImage(String src) {
+    print("下载图片: $src");
+  }
+
+  @override
+  void onChapterUrlEmpty(Chapter chapter) {
+    // print("章节URL为空: ${chapter.name}");
+  }
+
+  @override
+  void onError(error, {StackTrace? stackTrace}) {
+    print("发生错误:$error");
+    print(stackTrace);
+  }
+
+  @override
+  void onSetCover(String src, String relativePath) {
+    print("设置封面: $src");
+  }
+
+  ConsoleCallback() {
+    Console.init();
+  }
 }

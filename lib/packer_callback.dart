@@ -14,14 +14,17 @@ abstract class PackerCallback {
   void onBeforeResolveImage(String src);
 
   /// 下载图片后
-  void onCompleteResolveImage(String src);
+  void onAfterResolveImage(String src, String relativeImgPath);
 
   /// 下载章节后
   void onAfterBeforeResolveChapter(Chapter chapter);
 
   /// 打包完成
-  void onCompletePack(Volume volume, String dest);
+  void onAfterPack(Volume volume, String dest);
+
+  /// 设置封面
+  void onSetCover(String src, String relativePath);
 
   /// 发生错误
-  void onError(error);
+  void onError(error, {StackTrace? stackTrace});
 }

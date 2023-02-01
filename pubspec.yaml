@@ -10,6 +10,7 @@ dev_dependencies:
   test: ^1.16.0
 dependencies:
   archive: ^3.3.5
+  console: ^4.1.0
   html: ^0.15.1
   http: ^0.13.5
   path: ^1.8.3
