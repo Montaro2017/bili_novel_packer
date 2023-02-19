@@ -145,7 +145,8 @@ class ManifestItem {
   String href;
   String mediaType;
 
-  ManifestItem(this.id, this.href, this.mediaType);
+  ManifestItem(this.id, String href, this.mediaType)
+      : href = href.replaceAll("\\", "/");
 }
 
 class _Spine extends EpubChildNode {
