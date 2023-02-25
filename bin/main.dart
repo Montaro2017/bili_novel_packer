@@ -5,11 +5,12 @@ import 'package:bili_novel_packer/bili_novel/bili_novel_http.dart' as bili_http;
 import 'package:bili_novel_packer/bili_novel/bili_novel_model.dart';
 import 'package:bili_novel_packer/bili_novel_packer.dart';
 import 'package:bili_novel_packer/loading_bar.dart';
+import 'package:bili_novel_packer/pack_option.dart';
 import 'package:bili_novel_packer/packer_callback.dart';
 import 'package:console/console.dart';
 
 const String gitUrl = "https://gitee.com/Montaro2017/bili_novel_packer";
-const String version = "0.0.1-beta";
+const String version = "0.0.3-beta";
 
 void main(List<String> arguments) async {
   printWelcome();
@@ -31,9 +32,9 @@ Future<void> start() async {
   print("");
   printNovel(novel);
   Catalog catalog = await bili_http.getCatalog(id);
-  pause();
+  var packOption = readPackOption(catalog);
   PackerCallback callback = ConsoleCallback();
-  for (Volume volume in catalog.volumes) {
+  for (Volume volume in packOption.packVolumes) {
     String dest = getDest(novel, volume);
     BiliNovelVolumePacker packer = BiliNovelVolumePacker(
       novel: novel,
@@ -41,6 +42,7 @@ Future<void> start() async {
       volume: volume,
       dest: dest,
       callback: callback,
+      addChapterTitle: packOption.addChapterTitle,
     );
     await packer.pack();
   }
@@ -66,6 +68,58 @@ int readNovelId() {
     throw "请输入正确的ID或URL";
   }
   return id;
+}
+
+PackOption readPackOption(Catalog catalog) {
+  var option = PackOption();
+  var select = readSelectVolume(catalog);
+  Console.write("\n");
+  option.packVolumes = select;
+  option.addChapterTitle =
+      Chooser(["是", "否"], message: "是否为每章添加标题？").chooseSync() == "是";
+  Console.write("\n");
+  return option;
+}
+
+List<Volume> readSelectVolume(Catalog catalog) {
+  Console.write("\n");
+  for (int i = 0; i < catalog.volumes.length; i++) {
+    Console.write("[${i + 1}] ${catalog.volumes[i].name}\n");
+  }
+  Console.write("[0] 选择全部\n");
+  Console.write(
+    "请选择需要下载的分卷(可输入如1-9进行范围选择以及如2,5单独选择):",
+  );
+  var input = Console.readLine();
+  List<Volume> selectVolumeIndex = [];
+
+  if (input == null || input == "0") {
+    for (int i = 0; i < catalog.volumes.length; i++) {
+      selectVolumeIndex.add(catalog.volumes[i]);
+    }
+    return selectVolumeIndex;
+  }
+  List<String> parts = input.split(",");
+  for (var part in parts) {
+    List<String> range = part.split("-");
+    if (range.length == 1) {
+      int index = int.parse(range[0]) - 1;
+      selectVolumeIndex.add(catalog.volumes[index]);
+    } else {
+      int from = int.parse(range[0]);
+      int to = int.parse(range[1]);
+      if (from > to) {
+        int tmp = from;
+        from = to;
+        to = tmp;
+      }
+      for (int i = from; i <= to; i++) {
+        int index = i - 1;
+        selectVolumeIndex.add(catalog.volumes[index]);
+      }
+    }
+  }
+  return selectVolumeIndex;
 }
 
 void pause() {

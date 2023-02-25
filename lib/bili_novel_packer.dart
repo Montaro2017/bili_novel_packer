@@ -17,6 +17,7 @@ class BiliNovelVolumePacker {
   final Catalog catalog;
   final EpubPacker packer;
   final PackerCallback? callback;
+  final bool addChapterTitle;
 
   int imageCount = 0;
   int chapterCount = 0;
@@ -34,6 +35,7 @@ class BiliNovelVolumePacker {
     required this.catalog,
     required this.volume,
     required this.dest,
+    required this.addChapterTitle,
     this.callback,
   }) : packer = EpubPacker(dest);
 
@@ -78,6 +80,13 @@ class BiliNovelVolumePacker {
       return _ChapterInfo(chapter, null, []);
     }
     Document chapterDocument = await http.getChapter(chapter.url!);
+    if (_shouldAddChapterTitle(chapter)) {
+      var firstChild = chapterDocument.body!.firstChild;
+      Node chapterTitle = Element.html(
+        '<div style="margin-top:0.5em;font-size:1.25em;font-weight: 800;text-align:center;">${chapter.name}</div>',
+      );
+      chapterDocument.body!.insertBefore(chapterTitle, firstChild);
+    }
     List<String?> imageSrcList = await _resolveChapterImage(chapterDocument);
     callback?.onAfterResolveChapter(chapter);
     return _ChapterInfo(chapter, chapterDocument, imageSrcList);
@@ -144,6 +153,12 @@ class BiliNovelVolumePacker {
         return;
       }
     }
+  }
+
+  bool _shouldAddChapterTitle(Chapter chapter) {
+    // RegExp regExp = RegExp("插图|后记|转载信息");
+    // return addChapterTitle && !regExp.hasMatch(chapter.name);
+    return addChapterTitle;
   }
 }
 
