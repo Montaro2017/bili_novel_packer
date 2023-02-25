@@ -1,34 +1,37 @@
+import 'package:bili_novel_packer/bili_novel/bili_novel_constant.dart';
+import 'package:bili_novel_packer/bili_novel/bili_novel_model.dart';
 import 'package:html/dom.dart';
 import 'package:html/parser.dart' show parse;
-import 'package:bili_novel_packer/bili_novel/bili_novel_model.dart';
-import 'package:bili_novel_packer/bili_novel/bili_novel_constant.dart';
 
 Novel parseNovel(int id, String html) {
   var doc = parse(html);
   Novel novel = Novel();
   novel.id = id;
-  novel.title = doc.querySelector(".book-info>h1.book-name")!.text;
-  novel.coverUrl = doc.querySelector(".book-img.fl > img")!.attributes["src"]!;
-  novel.tags =
-      doc.querySelectorAll(".book-label a").map((e) => e.text).toList();
-  novel.status = novel.tags[0];
-  novel.author = doc.querySelector(".au-name a")!.text;
-  novel.description = doc.querySelector(".book-dec > p")!.text;
+  novel.title = doc.querySelector(".book-title")!.text;
+  novel.coverUrl = doc.querySelector(".book-layout>img")!.attributes["src"]!;
+  novel.tags = doc
+      .querySelectorAll(".book-cell .book-meta span em")
+      .map((e) => e.text)
+      .toList();
+  novel.status =
+      doc.querySelector(".book-cell .book-meta+.book-meta")!.nodes.last.text!;
+  novel.author = doc.querySelector(".book-rand-a span")!.text;
+  novel.description = doc.querySelector("#bookSummary content")!.text;
   return novel;
 }
 
 Catalog parseCatalog(String html) {
   var doc = parse(html);
   Catalog catalog = Catalog();
-  var children = doc.querySelector("ul.chapter-list")!.children;
+  var children = doc.querySelector("#volumes")!.children;
   Volume? volume;
   for (var child in children) {
-    if (child.classes.contains("volume")) {
+    if (child.classes.contains("chapter-bar")) {
       if (volume != null) {
         catalog.volumes.add(volume);
       }
       volume = Volume(child.text);
-    } else if (child.classes.contains("col-4")) {
+    } else if (child.classes.contains("jsChapter")) {
       var link = child.querySelector("a")!;
       String name = link.text;
       String? href = link.attributes["href"];
@@ -48,25 +51,30 @@ Catalog parseCatalog(String html) {
 
 ChapterPage parsePage(String html) {
   var doc = parse(html);
-  var content = doc.querySelector("#TextContent")!;
+  var content = doc.querySelector("#acontent")!;
 
   String? prevPage;
   String? nextPage;
   String? prevChapter;
   String? nextChapter;
-  var prev = doc.querySelector(".mlfy_page a:first-child");
-  var next = doc.querySelector(".mlfy_page a:last-child");
-  if (prev != null && prev.text == "上一章") {
-    prevChapter = domain + prev.attributes["href"]!;
+
+  RegExp regExp = RegExp("url_previous:'(.*?)',url_next:'(.*?)'");
+  RegExpMatch? match = regExp.firstMatch(doc.outerHtml);
+  String? prevUrl = match?.group(1);
+  String? nextUrl = match?.group(2);
+  var prev = doc.querySelector("#footlink a:first-child");
+  var next = doc.querySelector("#footlink a:last-child");
+  if (prev != null && prev.text == "上一章" && prevUrl != null) {
+    prevChapter = domain + prevUrl;
   }
-  if (prev != null && prev.text == "上一页") {
-    prevPage = domain + prev.attributes["href"]!;
+  if (prev != null && prev.text == "上一页" && prevUrl != null) {
+    prevPage = domain + prevUrl;
   }
-  if (next != null && next.text == "下一章") {
-    nextChapter = domain + next.attributes["href"]!;
+  if (next != null && next.text == "下一章" && nextUrl != null) {
+    nextChapter = domain + nextUrl;
   }
-  if (next != null && next.text == "下一页") {
-    nextPage = domain + next.attributes["href"]!;
+  if (next != null && next.text == "下一页" && nextUrl != null) {
+    nextPage = domain + nextUrl;
   }
 
   _removeElements(content.querySelectorAll("div"));
@@ -89,4 +97,3 @@ void _removeElements(List<Element> elements) {
     element.remove();
   }
 }
-
