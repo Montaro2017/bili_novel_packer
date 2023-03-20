@@ -8,7 +8,7 @@ Novel parseNovel(int id, String html) {
   Novel novel = Novel();
   novel.id = id;
   novel.title = doc.querySelector(".book-title")!.text;
-  novel.coverUrl = doc.querySelector(".book-layout>img")!.attributes["src"]!;
+  novel.coverUrl = doc.querySelector(".book-layout img")!.attributes["src"]!;
   novel.tags = doc
       .querySelectorAll(".book-cell .book-meta span em")
       .map((e) => e.text)
