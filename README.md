@@ -17,7 +17,7 @@
 
 ![01](./images/img.png)
 
-![02](./images/2.bmp)
+![02](./images/img_1.png)
 
 ## 编译
 
