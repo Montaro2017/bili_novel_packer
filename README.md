@@ -15,9 +15,9 @@
 ## 使用
 双击exe或者使用命令提示符都可。
 
-![01](./images/1.bmp)
+![01](./images/img.png)
 
-![02](./images/2.bmp)
+![02](./images/img_1.png)
 
 ## 编译
 
