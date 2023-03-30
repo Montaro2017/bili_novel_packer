@@ -69,7 +69,7 @@ class Chapter {
   String? chapterUrl;
 
   // 章节内容
-  late String chapterContent;
+  String? chapterContent;
 
   // 所属卷
   Volume volume;

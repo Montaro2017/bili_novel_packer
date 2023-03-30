@@ -7,7 +7,7 @@ import 'package:html/dom.dart';
 import 'package:html/parser.dart';
 
 class BiliLightNovelSource implements LightNovelSource {
-  static final RegExp _exp = RegExp("novel/(\\d+)");
+  static final RegExp _exp = RegExp("https?://w.linovelib.com/novel/(\\d+)");
   static final String domain = "https://w.linovelib.com";
 
   @override
@@ -21,11 +21,11 @@ class BiliLightNovelSource implements LightNovelSource {
   Future<Novel> getNovel(String url) async {
     String id = _getId(url);
     Novel novel = Novel();
-    var doc = parse(HttpUtil.get("$domain/novel/$id.html"));
+    var doc = parse((await HttpUtil.get("$domain/novel/$id.html")).body);
 
     novel.id = id.toString();
     novel.title = doc.querySelector(".book-title")!.text;
-    novel.coverUrl = doc.querySelector(".book-layout>img")!.attributes["src"]!;
+    novel.coverUrl = doc.querySelector(".book-layout img")!.attributes["src"]!;
     novel.tags = doc
         .querySelectorAll(".book-cell .book-meta span em")
         .map((e) => e.text)
@@ -48,7 +48,7 @@ class BiliLightNovelSource implements LightNovelSource {
   /// 获取小说目录
   @override
   Future<Catalog> getNovelCatalog(Novel novel) async {
-    var doc = parse(HttpUtil.get("$domain/novel/${novel.id}/catalog"));
+    var doc = parse((await HttpUtil.get("$domain/novel/${novel.id}/catalog")).body);
     var catalog = Catalog(novel);
     var children = doc.querySelector("#volumes")!.children;
     Volume? volume;
@@ -80,6 +80,7 @@ class BiliLightNovelSource implements LightNovelSource {
   @override
   Future<Document> getNovelChapter(Chapter chapter) async {
     Document doc = Document.html(LightNovelSource.html);
+
     String? nextPageUrl = chapter.chapterUrl;
     if (nextPageUrl == null) {
       chapter.chapterUrl = await _getChapterUrl(chapter);
@@ -87,6 +88,7 @@ class BiliLightNovelSource implements LightNovelSource {
     if (chapter.chapterUrl == null) {
       throw "Empty chapter url";
     }
+
     do {
       ChapterPage page = await _getChapterPage(nextPageUrl!);
       for (var content in page.contents) {
@@ -121,17 +123,18 @@ class BiliLightNovelSource implements LightNovelSource {
       ChapterPage chapterPage = await _getChapterPage(prevChapter.chapterUrl!);
       String? nextPageUrl;
       ChapterPage page = chapterPage;
-      do {
+      for (int i = 0; i < 20; i++) {
         nextPageUrl = page.nextPageUrl;
         if (nextPageUrl == null) {
           return page.nextChapterUrl;
         }
         page = await _getChapterPage(nextPageUrl);
-      } while (true);
+      }
     }
     return null;
   }
 
+  // 根据目录查找上一章
   Chapter? _getPrevChapter(Catalog catalog, Chapter chapter) {
     List<Chapter> allChapter = catalog.volumes
         .expand(
@@ -143,6 +146,7 @@ class BiliLightNovelSource implements LightNovelSource {
     return allChapter[pos - 1];
   }
 
+  // 根据目录查找下一章
   Chapter? _getNextChapter(Catalog catalog, Chapter chapter) {
     List<Chapter> chapters = catalog.volumes
         .expand(
@@ -161,6 +165,7 @@ class BiliLightNovelSource implements LightNovelSource {
 
   /// 获取章节一页内容
   Future<ChapterPage> _getChapterPage(String url) async {
+    // TODO: fix无法获取上一章问题
     var req = (await HttpUtil.get(url));
     var doc = parse(req.body);
     var content = doc.querySelector("#acontent")!;
