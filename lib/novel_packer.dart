@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:bili_novel_packer/epub_packer/epub_packer.dart';
@@ -69,7 +70,6 @@ class NovelPacker {
     // 下载所有图片
     List<MapEntry<String, Uint8List>?> images =
         await _resolveImages("", imageElements);
-    var cover;
     // 添加图片资源
     for (var image in images) {
       if (image == null) continue;
@@ -82,7 +82,7 @@ class NovelPacker {
       Chapter chapter = volume.chapters[i];
       Document chapterDocument = chapterDocuments[i];
       packer.addChapter(
-        name: "OEBPS/chapter${(++i).toString().padLeft(4, "0")}.xhtml",
+        name: "OEBPS/chapter${(i + 1).toString().padLeft(4, "0")}.xhtml",
         title: chapter.chapterName,
         chapterContent: chapterDocument.outerHtml,
       );
@@ -113,7 +113,13 @@ class NovelPacker {
     if (!src.startsWith("http")) {
       src = (toUri(baseUri)..pathSegments.add(src)).path;
     }
-    Uint8List data = (await HttpUtil.get(src)).bodyBytes;
+    Uint8List data = (await HttpUtil.get(
+      src,
+      headers: {
+        "referer": "https://w.linovelib.com/",
+      },
+    ))
+        .bodyBytes;
     String href = "images/${URLUtil.getFileName(src)}";
     image.attributes["src"] = href;
     return MapEntry("OEBPS/$href", data);
@@ -121,7 +127,7 @@ class NovelPacker {
 
   String _getEpubName(Volume volume) {
     return _ensureFileName(
-      "${volume.catalog.novel.title} ${volume.volumeName}.epub",
+      "${volume.catalog.novel.title}${Platform.pathSeparator}${volume.catalog.novel.title} ${volume.volumeName}.epub",
     );
   }
 

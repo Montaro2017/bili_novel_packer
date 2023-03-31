@@ -7,7 +7,7 @@ import 'package:html/dom.dart';
 import 'package:html/parser.dart';
 
 class BiliLightNovelSource implements LightNovelSource {
-  static final RegExp _exp = RegExp("https?://w.linovelib.com/novel/(\\d+)");
+  static final RegExp _exp = RegExp("linovelib.com/novel/(\\d+)");
   static final String domain = "https://w.linovelib.com";
 
   @override
@@ -48,7 +48,8 @@ class BiliLightNovelSource implements LightNovelSource {
   /// 获取小说目录
   @override
   Future<Catalog> getNovelCatalog(Novel novel) async {
-    var doc = parse((await HttpUtil.get("$domain/novel/${novel.id}/catalog")).body);
+    var doc =
+        parse((await HttpUtil.get("$domain/novel/${novel.id}/catalog")).body);
     var catalog = Catalog(novel);
     var children = doc.querySelector("#volumes")!.children;
     Volume? volume;
@@ -81,14 +82,11 @@ class BiliLightNovelSource implements LightNovelSource {
   Future<Document> getNovelChapter(Chapter chapter) async {
     Document doc = Document.html(LightNovelSource.html);
 
-    String? nextPageUrl = chapter.chapterUrl;
-    if (nextPageUrl == null) {
-      chapter.chapterUrl = await _getChapterUrl(chapter);
-    }
+    chapter.chapterUrl ??= await _getChapterUrl(chapter);
     if (chapter.chapterUrl == null) {
       throw "Empty chapter url";
     }
-
+    String? nextPageUrl = chapter.chapterUrl!;
     do {
       ChapterPage page = await _getChapterPage(nextPageUrl!);
       for (var content in page.contents) {
@@ -165,7 +163,6 @@ class BiliLightNovelSource implements LightNovelSource {
 
   /// 获取章节一页内容
   Future<ChapterPage> _getChapterPage(String url) async {
-    // TODO: fix无法获取上一章问题
     var req = (await HttpUtil.get(url));
     var doc = parse(req.body);
     var content = doc.querySelector("#acontent")!;
@@ -181,17 +178,17 @@ class BiliLightNovelSource implements LightNovelSource {
     String? nextUrl = match?.group(2);
     var prev = doc.querySelector("#footlink a:first-child");
     var next = doc.querySelector("#footlink a:last-child");
-    if (prev != null && prev.text == "上一章" && prevUrl != null) {
-      prevChapter = domain + prevUrl;
-    }
+
     if (prev != null && prev.text == "上一页" && prevUrl != null) {
       prevPage = domain + prevUrl;
+    } else if (prev != null && prevUrl != null) {
+      prevChapter = domain + prevUrl;
     }
-    if (next != null && next.text == "下一章" && nextUrl != null) {
-      nextChapter = domain + nextUrl;
-    }
+
     if (next != null && next.text == "下一页" && nextUrl != null) {
       nextPage = domain + nextUrl;
+    } else if (next != null && nextUrl != null) {
+      nextChapter = domain + nextUrl;
     }
 
     HTMLUtil.removeElements(content.querySelectorAll("div"));
