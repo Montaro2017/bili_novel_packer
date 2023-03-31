@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:bili_novel_packer/epub_packer/epub_packer.dart';
+import 'package:bili_novel_packer/light_novel/base/light_novel_cover_detector.dart';
 import 'package:bili_novel_packer/light_novel/base/light_novel_model.dart';
 import 'package:bili_novel_packer/light_novel/base/light_novel_source.dart';
 import 'package:bili_novel_packer/light_novel/bili_novel/bili_novel_source.dart';
@@ -70,13 +71,17 @@ class NovelPacker {
     // 下载所有图片
     List<MapEntry<String, Uint8List>?> images =
         await _resolveImages("", imageElements);
+
+    LightNovelCoverDetector detector = LightNovelCoverDetector();
+
     // 添加图片资源
     for (var image in images) {
       if (image == null) continue;
+      detector.add(image.key, image.value);
       packer.addImage(name: image.key, data: image.value);
     }
-    // TODO: 确定封面
-
+    // TODO: 待测试
+    packer.cover = detector.detectCover();
     // 添加章节资源
     for (int i = 0; i < volume.chapters.length; i++) {
       Chapter chapter = volume.chapters[i];

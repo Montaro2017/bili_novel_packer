@@ -15,8 +15,14 @@ class LightNovelCoverDetector {
   }
 
   String detectCover() {
-    // TODO: 寻找最接近coverRatio的图片
-    throw UnimplementedError();
+    // 根据比例进行排序 获取最接近封面比例的图片
+    List<MapEntry<String, ImageInfo>> list = _imageInfoMap.entries.toList()
+      ..sort((a, b) {
+        double distanceA = (a.value.ratio - coverRatio).abs();
+        double distanceB = (b.value.ratio - coverRatio).abs();
+        return distanceA.compareTo(distanceB);
+      });
+    return list.first.key;
   }
 }
 
