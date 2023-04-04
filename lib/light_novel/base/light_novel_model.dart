@@ -59,6 +59,11 @@ class Volume {
   List<Chapter> chapters = [];
 
   Volume(this.volumeName, this.catalog);
+
+  @override
+  String toString() {
+    return volumeName;
+  }
 }
 
 class Chapter {

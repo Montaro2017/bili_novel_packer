@@ -7,6 +7,7 @@ import 'package:bili_novel_packer/light_novel/base/light_novel_model.dart';
 import 'package:bili_novel_packer/light_novel/base/light_novel_source.dart';
 import 'package:bili_novel_packer/light_novel/bili_novel/bili_novel_source.dart';
 import 'package:bili_novel_packer/pack_argument.dart';
+import 'package:bili_novel_packer/pack_callback.dart';
 import 'package:bili_novel_packer/util/http_util.dart';
 import 'package:bili_novel_packer/util/url_util.dart';
 import 'package:html/dom.dart';
@@ -44,18 +45,18 @@ class NovelPacker {
         .then((catalog) => this.catalog = catalog);
   }
 
-  void pack(PackArgument arg) async {
+  void pack(PackArgument arg, [PackCallback? callback]) async {
     if (arg.combineVolume) {
       // TODO
     } else {
       for (var volume in arg.packVolumes) {
-        await _packVolume(volume);
-        print("${volume.volumeName}打包完成");
+        await _packVolume(volume, callback);
       }
     }
   }
 
-  Future<void> _packVolume(Volume volume) async {
+  Future<void> _packVolume(Volume volume, [PackCallback? callback]) async {
+    callback?.beforePackVolume(volume);
     EpubPacker packer = EpubPacker(_getEpubName(volume));
     packer.docTitle = "${volume.catalog.novel.title} ${volume.volumeName}";
     packer.creator = volume.catalog.novel.author;
@@ -94,6 +95,7 @@ class NovelPacker {
     }
     // 写出目标文件
     packer.pack();
+    callback?.afterPackVolume(volume);
   }
 
   /// 下载所有图片
