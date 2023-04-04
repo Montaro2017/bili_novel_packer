@@ -80,8 +80,8 @@ class NovelPacker {
       detector.add(image.key, image.value);
       packer.addImage(name: image.key, data: image.value);
     }
-    // TODO: 待测试
-    packer.cover = detector.detectCover();
+    // 设置封面
+    packer.cover = detector.detectCover().replaceFirst("OEBPS/", "");
     // 添加章节资源
     for (int i = 0; i < volume.chapters.length; i++) {
       Chapter chapter = volume.chapters[i];
@@ -131,12 +131,12 @@ class NovelPacker {
   }
 
   String _getEpubName(Volume volume) {
-    return _ensureFileName(
+    return _sanitizeFileName(
       "${volume.catalog.novel.title}${Platform.pathSeparator}${volume.catalog.novel.title} ${volume.volumeName}.epub",
     );
   }
 
-  String _ensureFileName(String name) {
+  String _sanitizeFileName(String name) {
     return name.replaceAllMapped(
       "<|>|:|\"|/|\\\\|\\?|\\*|\\\\|\\|",
       (match) => " ",

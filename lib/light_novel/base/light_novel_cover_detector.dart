@@ -5,7 +5,7 @@ import 'package:bili_novel_packer/media_type.dart';
 
 class LightNovelCoverDetector {
   // 最佳封面图片比率
-  static final double coverRatio = 9 / 16;
+  static final double coverRatio = 3 / 4;
 
   final Map<String, ImageInfo> _imageInfoMap = {};
 
