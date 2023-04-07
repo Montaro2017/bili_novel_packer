@@ -7,7 +7,7 @@ import 'package:bili_novel_packer/pack_callback.dart';
 import 'package:console/console.dart';
 
 const String gitUrl = "https://gitee.com/Montaro2017/bili_novel_packer";
-const String version = "0.1.0-beta-multi";
+const String version = "0.1.0-beta-multi-source";
 
 void main(List<String> args) async {
   printWelcome();
@@ -34,7 +34,7 @@ void start() async {
 String readUrl() {
   String? url;
   do {
-    print("请输入URL:");
+    print("请输入URL(目前暂不支持直接输入id):");
     url = stdin.readLineSync();
   } while (url == null || url.isEmpty);
   return url;
