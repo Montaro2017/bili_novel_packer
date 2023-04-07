@@ -14,7 +14,7 @@ class BiliLightNovelSource implements LightNovelSource {
   String name = "哔哩轻小说";
 
   @override
-  String supportedUrl = "https://w.linovelib.com";
+  String sourceUrl = "https://w.linovelib.com";
 
   /// 获取小说基本信息
   @override

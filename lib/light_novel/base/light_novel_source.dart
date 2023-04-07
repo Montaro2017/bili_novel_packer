@@ -6,7 +6,7 @@ abstract class LightNovelSource {
 
   String get name;
 
-  String get supportedUrl;
+  String get sourceUrl;
 
   bool supportUrl(String url);
 
