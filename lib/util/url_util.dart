@@ -13,4 +13,12 @@ class URLUtil {
     }
     return url.substring(start + 1, end);
   }
+
+  static String resolve(String baseUrl, String relativeUrl) {
+    if (relativeUrl == "./") {
+      var pos = baseUrl.lastIndexOf("/");
+      return baseUrl.substring(0, pos);
+    }
+    return baseUrl;
+  }
 }

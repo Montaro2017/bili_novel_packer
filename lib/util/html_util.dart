@@ -24,4 +24,12 @@ class HTMLUtil {
       img.wrap('<div class="duokan-image-single"></div>');
     }
   }
+
+  static void unwrap(Element element) {
+    var childNodes = element.nodes;
+    for (var childNode in childNodes) {
+      element.parent!.insertBefore(childNode.clone(true), element);
+    }
+    element.remove();
+  }
 }

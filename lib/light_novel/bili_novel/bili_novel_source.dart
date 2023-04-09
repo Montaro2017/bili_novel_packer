@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:bili_novel_packer/light_novel/base/light_novel_model.dart';
 import 'package:bili_novel_packer/light_novel/base/light_novel_source.dart';
 import 'package:bili_novel_packer/light_novel/bili_novel/bili_novel_constant.dart';
@@ -11,17 +13,17 @@ class BiliLightNovelSource implements LightNovelSource {
   static final String domain = "https://w.linovelib.com";
 
   @override
-  String name = "哔哩轻小说";
+  final String name = "哔哩轻小说";
 
   @override
-  String sourceUrl = "https://w.linovelib.com";
+  final String sourceUrl = "https://w.linovelib.com";
 
   /// 获取小说基本信息
   @override
   Future<Novel> getNovel(String url) async {
     String id = _getId(url);
     Novel novel = Novel();
-    var doc = parse((await HttpUtil.get("$domain/novel/$id.html")).body);
+    var doc = parse(await HttpUtil.getString("$domain/novel/$id.html"));
 
     novel.id = id.toString();
     novel.title = doc.querySelector(".book-title")!.text;
@@ -49,7 +51,7 @@ class BiliLightNovelSource implements LightNovelSource {
   @override
   Future<Catalog> getNovelCatalog(Novel novel) async {
     var doc =
-        parse((await HttpUtil.get("$domain/novel/${novel.id}/catalog")).body);
+        parse(await HttpUtil.getString("$domain/novel/${novel.id}/catalog"));
     var catalog = Catalog(novel);
     var children = doc.querySelector("#volumes")!.children;
     Volume? volume;
@@ -97,8 +99,6 @@ class BiliLightNovelSource implements LightNovelSource {
     _replaceSecretText(doc.body!);
 
     HTMLUtil.removeLineBreak(doc.body!);
-    HTMLUtil.wrapDuoKanImage(doc.body!);
-
     return doc;
   }
 
@@ -163,8 +163,7 @@ class BiliLightNovelSource implements LightNovelSource {
 
   /// 获取章节一页内容
   Future<ChapterPage> _getChapterPage(String url) async {
-    var req = (await HttpUtil.get(url));
-    var doc = parse(req.body);
+    var doc = parse(await HttpUtil.getString(url));
     var content = doc.querySelector("#acontent")!;
 
     String? prevPage;
@@ -215,6 +214,16 @@ class BiliLightNovelSource implements LightNovelSource {
       sb.write(replacement);
     }
     element.innerHtml = sb.toString();
+  }
+
+  @override
+  Future<Uint8List> getImage(String src) {
+    if (!src.startsWith("http")) {
+      src = "$domain/$src";
+    }
+    return HttpUtil.getBytes(src, headers: {
+      "referer": domain,
+    });
   }
 }
 

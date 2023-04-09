@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:bili_novel_packer/light_novel/base/light_novel_model.dart';
 import 'package:html/dom.dart';
 
@@ -15,4 +17,6 @@ abstract class LightNovelSource {
   Future<Catalog> getNovelCatalog(Novel novel);
 
   Future<Document> getNovelChapter(Chapter chapter);
+
+  Future<Uint8List> getImage(String src);
 }
