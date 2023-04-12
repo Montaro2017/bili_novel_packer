@@ -1,5 +1,7 @@
 # 哔哩轻小说打包器
 
+[Gitee](https://gitee.com/Montaro2017/bili_novel_packer) | [Github](https://github.com/Montaro2017/bili_novel_packer)
+
 ## 介绍
 
 本项目用于从[哔哩轻小说](https://w.linovelib.com)网站下载小说并打包成EPUB
