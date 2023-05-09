@@ -15,9 +15,9 @@ include: package:lints/recommended.yaml
 
 # Uncomment the following section to specify additional rules.
 
-# linter:
-#   rules:
-#     - camel_case_types
+linter:
+ rules:
+   - always_use_package_imports
 
 # analyzer:
 #   exclude:

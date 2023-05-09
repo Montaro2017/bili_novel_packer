@@ -1,5 +1,3 @@
-const String domain = "https://w.linovelib.com";
-
 const Map<String, String> secretMap = {
   "\uE800": "的",
   "\uE801": "一",

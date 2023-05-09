@@ -1,6 +1,6 @@
 name: bili_novel_packer
 description: A sample command-line application.
-version: 0.0.4-beta
+version: 0.1.0-beta-multi-source
 
 environment:
   sdk: '>=2.18.0 <3.0.0'
@@ -11,6 +11,7 @@ dev_dependencies:
 dependencies:
   archive: ^3.3.5
   console: ^4.1.0
+  fast_gbk: ^1.0.0
   html: ^0.15.1
   http: ^0.13.5
   path: ^1.8.3

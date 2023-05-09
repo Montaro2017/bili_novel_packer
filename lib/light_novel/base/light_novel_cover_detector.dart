@@ -1,64 +1,29 @@
+import 'dart:typed_data';
+
 import 'package:archive/archive.dart';
-import 'package:bili_novel_packer/bili_novel/bili_novel_http.dart';
-import 'package:bili_novel_packer/bili_novel/bili_novel_model.dart';
 import 'package:bili_novel_packer/media_type.dart';
 
-Chapter? getPrevChapter(Catalog catalog, Chapter chapter) {
-  List<Chapter> chapters = catalog.volumes
-      .expand(
-        (volume) => volume.chapters,
-      )
-      .toList();
-  int pos = chapters.indexOf(chapter);
-  if (pos < 1) return null;
-  return chapters[pos - 1];
-}
+class LightNovelCoverDetector {
+  // 最佳封面图片比率
+  static final double coverRatio = 3 / 4;
 
-Chapter? getNextChapter(Catalog catalog, Chapter chapter) {
-  List<Chapter> chapters = catalog.volumes
-      .expand(
-        (volume) => volume.chapters,
-      )
-      .toList();
-  int pos = chapters.indexOf(chapter);
-  if (pos < 0 || pos > chapters.length - 1) return null;
-  return chapters[pos + 1];
-}
+  final Map<String, ImageInfo> _imageInfoMap = {};
 
-Future<String?> _getPrevChapterUrl(String url) async {
-  return (await getChapterPage(url)).prevChapterUrl;
-}
+  void add(String name, Uint8List imageData) {
+    ImageInfo imageInfo = _getImageInfo(InputStream(imageData));
+    _imageInfoMap[name] = imageInfo;
+  }
 
-Future<String?> _getNextChapterUrl(String url) async {
-  String? nextPageUrl = url;
-  do {
-    var page = await getChapterPage(nextPageUrl!);
-    nextPageUrl = page.nextPageUrl;
-    if (nextPageUrl == null) {
-      return page.nextChapterUrl;
-    }
-  } while (true);
-}
-
-/// 通过目录[catalog]和章节[chapter]获取章节的url
-/// 其原理是通过上下章节页面中的“上一章”和“下一章”的链接获取
-/// 可能返回空
-Future<String?> getChapterUrl(Catalog catalog, Chapter chapter) async {
-  String? chapterUrl = chapter.url;
-  if (chapterUrl != null && chapterUrl.isNotEmpty) return chapterUrl;
-
-  Chapter? nextChapter = getNextChapter(catalog, chapter);
-  chapterUrl = nextChapter?.url == null
-      ? null
-      : await _getPrevChapterUrl(nextChapter!.url!);
-  if (chapterUrl != null && chapterUrl.isNotEmpty) return chapterUrl;
-
-  Chapter? prevChapter = getPrevChapter(catalog, chapter);
-  chapterUrl = prevChapter?.url == null
-      ? null
-      : await _getNextChapterUrl(prevChapter!.url!);
-
-  return chapterUrl;
+  String detectCover() {
+    // 根据比例进行排序 获取最接近封面比例的图片
+    List<MapEntry<String, ImageInfo>> list = _imageInfoMap.entries.toList()
+      ..sort((a, b) {
+        double distanceA = (a.value.ratio - coverRatio).abs();
+        double distanceB = (b.value.ratio - coverRatio).abs();
+        return distanceA.compareTo(distanceB);
+      });
+    return list.first.key;
+  }
 }
 
 class ImageInfo {
@@ -76,7 +41,7 @@ class ImageInfo {
   }
 }
 
-ImageInfo? getImageInfo(InputStreamBase isb, [String? src]) {
+ImageInfo _getImageInfo(InputStreamBase isb) {
   int width;
   int height;
   String mimeType;
@@ -133,8 +98,7 @@ ImageInfo? getImageInfo(InputStreamBase isb, [String? src]) {
     mimeType = webp;
     return ImageInfo(width, height, mimeType);
   }
-  return null;
-  // throw "Unsupported image type $src";
+  throw "Unsupported Image";
 }
 
 int _readInt(InputStreamBase isb, int count, bool bigEndian) {
