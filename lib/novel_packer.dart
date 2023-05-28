@@ -151,9 +151,10 @@ class NovelPacker {
   }
 
   String _sanitizeFileName(String name) {
-    return name.replaceAllMapped(
-      "<|>|:|\"|/|\\\\|\\?|\\*|\\\\|\\|",
-      (match) => " ",
-    );
+    var keywords = {":","*","?","\"","<",">","|"};
+    for(var keyword in keywords){
+      name = name.replaceAll(keyword, " ");
+    }
+    return name;
   }
 }
