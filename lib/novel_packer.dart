@@ -102,7 +102,10 @@ class NovelPacker {
     }
 
     // 设置封面
-    packer.cover = detector.detectCover().replaceFirst("OEBPS/", "");
+    String? cover = detector.detectCover();
+    if (cover != null) {
+      packer.cover = cover.replaceFirst("OEBPS/", "");
+    }
 
     // 添加章节资源
     for (int i = 0; i < chapterDocuments.length; i++) {
@@ -151,8 +154,8 @@ class NovelPacker {
   }
 
   String _sanitizeFileName(String name) {
-    var keywords = {":","*","?","\"","<",">","|"};
-    for(var keyword in keywords){
+    var keywords = {":", "*", "?", "\"", "<", ">", "|"};
+    for (var keyword in keywords) {
       name = name.replaceAll(keyword, " ");
     }
     return name;
