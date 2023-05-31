@@ -99,6 +99,8 @@ class BiliLightNovelSource implements LightNovelSource {
     _replaceSecretText(doc.body!);
 
     HTMLUtil.removeLineBreak(doc.body!);
+    // 处理图片lazy load 实际src为data-src
+    _replaceImageSrc(doc.body!);
     return doc;
   }
 
@@ -214,6 +216,17 @@ class BiliLightNovelSource implements LightNovelSource {
       sb.write(replacement);
     }
     element.innerHtml = sb.toString();
+  }
+
+  _replaceImageSrc(Element element) {
+    List<Element> images = element.querySelectorAll("img");
+    for (var image in images) {
+      String? src = image.attributes["data-src"];
+      src ??= image.attributes["src"];
+      if (src != null) {
+        image.attributes["src"] = src;
+      }
+    }
   }
 
   @override
