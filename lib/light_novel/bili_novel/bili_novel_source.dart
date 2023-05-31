@@ -224,6 +224,11 @@ class BiliLightNovelSource implements LightNovelSource {
       String? src = image.attributes["data-src"];
       src ??= image.attributes["src"];
       if (src != null) {
+        // 过滤src有问题的img
+        if (src.contains("<")) {
+          image.remove();
+          continue;
+        }
         image.attributes["src"] = src;
       }
     }
