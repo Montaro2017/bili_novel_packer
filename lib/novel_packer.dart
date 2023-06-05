@@ -79,7 +79,8 @@ class NovelPacker {
       var chapter = chapterDocument.key;
       var document = chapterDocument.value;
       HTMLUtil.wrapDuoKanImage(document.body!);
-      imageElements.addAll(document.querySelectorAll("img"));
+      var images = document.querySelectorAll("img");
+      imageElements.addAll(images);
       if (addChapterTitle) {
         var firstChild = document.body!.firstChild;
         Node chapterTitle = Element.html(
@@ -97,8 +98,13 @@ class NovelPacker {
     // 添加图片资源
     for (var image in images) {
       if (image == null) continue;
-      detector.add(image.key, image.value);
-      packer.addImage(name: image.key, data: image.value);
+
+      try {
+        detector.add(image.key, image.value);
+        packer.addImage(name: image.key, data: image.value);
+      } catch (e) {
+        // 不支持的图片
+      }
     }
 
     // 设置封面

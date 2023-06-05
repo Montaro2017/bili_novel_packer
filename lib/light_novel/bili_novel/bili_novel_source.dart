@@ -9,7 +9,7 @@ import 'package:html/dom.dart';
 import 'package:html/parser.dart';
 
 class BiliLightNovelSource implements LightNovelSource {
-  static final RegExp _exp = RegExp("linovelib.com/novel/(\\d+)");
+  static final RegExp _exp = RegExp("linovelib\\.com/novel/(\\d+)");
   static final String domain = "https://w.linovelib.com";
 
   @override
@@ -228,6 +228,9 @@ class BiliLightNovelSource implements LightNovelSource {
         if (src.contains("<")) {
           image.remove();
           continue;
+        }
+        if (src.startsWith("//")) {
+          src = "https:$src";
         }
         image.attributes["src"] = src;
       }
