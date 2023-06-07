@@ -12,7 +12,7 @@ class HttpUtil {
   static Future<Uint8List> getBytes(
     String url, {
     Map<String, String>? headers,
-    Duration timeout = const Duration(seconds: 3),
+    Duration timeout = const Duration(seconds: 10),
   }) async {
     return retry(
       () => http.get(Uri.parse(url), headers: headers).timeout(timeout),
