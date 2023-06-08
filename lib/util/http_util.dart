@@ -7,20 +7,33 @@ import 'package:http/http.dart' as http;
 import 'package:retry/retry.dart';
 
 class HttpUtil {
-
   // 默认超时时间 单位秒
   static const int defaultTimeout = 10;
+  // 最大重试次数
+  static const int maxAttempts = 5;
 
   HttpUtil._();
+
+  static Future<T> _retry<T>(
+    FutureOr<T> Function() fn,
+  ) {
+    return retry(
+      fn,
+      retryIf: (e) =>
+          e is SocketException ||
+          e is TimeoutException ||
+          e is HandshakeException,
+      maxAttempts: maxAttempts,
+    );
+  }
 
   static Future<Uint8List> getBytes(
     String url, {
     Map<String, String>? headers,
     Duration timeout = const Duration(seconds: defaultTimeout),
   }) async {
-    return retry(
+    return _retry(
       () => http.get(Uri.parse(url), headers: headers).timeout(timeout),
-      retryIf: (e) => e is SocketException || e is TimeoutException,
     ).then((response) => response.bodyBytes);
   }
 
@@ -29,9 +42,8 @@ class HttpUtil {
     Map<String, String>? headers,
     Duration timeout = const Duration(seconds: defaultTimeout),
   }) async {
-    return retry(
+    return _retry(
       () => http.get(Uri.parse(url), headers: headers).timeout(timeout),
-      retryIf: (e) => e is SocketException || e is TimeoutException,
     ).then((response) => response.body);
   }
 
@@ -40,9 +52,8 @@ class HttpUtil {
     Map<String, String>? headers,
     Duration timeout = const Duration(seconds: defaultTimeout),
   }) async {
-    return retry(
+    return _retry(
       () => http.get(Uri.parse(url), headers: headers).timeout(timeout),
-      retryIf: (e) => e is SocketException || e is TimeoutException,
     ).then((response) => gbk.decode(response.bodyBytes));
   }
 }
