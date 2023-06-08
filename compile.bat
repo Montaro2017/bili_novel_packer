@@ -2,4 +2,4 @@
 del build /q /s /f
 rd build /q /s
 mkdir build
-dart compile exe bin/main.dart -o ./build/bili_novel_packer-0.1.2-M5.exe
+dart compile exe bin/main.dart -o ./build/bili_novel_packer-0.1.2-M6.exe
