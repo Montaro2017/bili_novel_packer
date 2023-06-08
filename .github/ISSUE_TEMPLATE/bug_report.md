@@ -1,3 +1,12 @@
+---
+name: Bug report
+about: Create a report to help us improve
+title: "[BUG]"
+labels: bug
+assignees: Montaro2017
+
+---
+
 ### 使用版本
 使用版本: 0.1.2-M7 (请使用最新版尝试是否仍有问题)
 
