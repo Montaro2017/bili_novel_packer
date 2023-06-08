@@ -70,8 +70,10 @@ class BiliLightNovelSource implements LightNovelSource {
         } else {
           href = "$domain$href";
         }
-        var chapter = Chapter(name, href, volume!);
-        volume.chapters.add(chapter);
+        if (volume != null) {
+          var chapter = Chapter(name, href, volume);
+          volume.chapters.add(chapter);
+        }
       }
     }
     if (volume != null) {
