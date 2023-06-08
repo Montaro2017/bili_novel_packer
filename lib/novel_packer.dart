@@ -154,9 +154,9 @@ class NovelPacker {
   }
 
   String _getEpubName(Volume volume) {
-    return _sanitizeFileName(
-      "${volume.catalog.novel.title}${Platform.pathSeparator}${volume.catalog.novel.title} ${volume.volumeName}.epub",
-    );
+    String title = _sanitizeFileName(volume.catalog.novel.title).trim();
+    String volumeName = _sanitizeFileName(volume.volumeName).trim();
+    return "$title${Platform.pathSeparator}$title $volumeName.epub";
   }
 
   String _sanitizeFileName(String name) {
