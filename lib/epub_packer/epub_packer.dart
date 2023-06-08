@@ -1,19 +1,18 @@
 import 'dart:convert';
 import 'dart:typed_data';
-import 'package:uuid/uuid.dart';
-import 'package:archive/archive_io.dart';
-import 'package:path/path.dart' as path;
 
-import 'package:bili_novel_packer/epub_packer/epub_opf.dart';
+import 'package:archive/archive_io.dart';
 import 'package:bili_novel_packer/epub_packer/epub_constant.dart';
 import 'package:bili_novel_packer/epub_packer/epub_navigator.dart';
-
+import 'package:bili_novel_packer/epub_packer/epub_opf.dart';
 import 'package:bili_novel_packer/media_type.dart' as epub_media_type;
+import 'package:path/path.dart' as path;
+import 'package:uuid/uuid.dart';
 
 class EpubPacker {
   final String epubFilePath;
   final ZipFileEncoder _zip = ZipFileEncoder();
-  final Utf8Encoder _converter = Utf8Encoder();
+  final Utf8Encoder _utf8Encoder = Utf8Encoder();
 
   // toc.ncx
   final EpubNavigator _navigator = EpubNavigator();
@@ -76,7 +75,7 @@ class EpubPacker {
     // 相对于toc和opf文件的路径
     String href = path.relative(name, from: "OEBPS");
     id ??= href;
-    Uint8List utf8Uint8List = _converter.convert(chapterContent);
+    Uint8List utf8Uint8List = _utf8Encoder.convert(chapterContent);
     _zip.addArchiveFile(
       ArchiveFile(name, utf8Uint8List.length, utf8Uint8List),
     );
@@ -107,7 +106,7 @@ class EpubPacker {
 
   /// 在打包前需要添加content.opf和toc.ncx文件
   void _beforePack() {
-    Uint8List ncxUint8List = _converter.convert(
+    Uint8List ncxUint8List = _utf8Encoder.convert(
       _navigator.build().toXmlString(pretty: true),
     );
     addArchiveFile(
@@ -117,7 +116,7 @@ class EpubPacker {
         ncxUint8List,
       ),
     );
-    Uint8List opfUint8List = _converter.convert(
+    Uint8List opfUint8List = _utf8Encoder.convert(
       _opf.build().toXmlString(pretty: true),
     );
     addArchiveFile(
