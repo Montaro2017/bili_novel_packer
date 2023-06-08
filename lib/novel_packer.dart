@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:async';
 
 import 'package:bili_novel_packer/epub_packer/epub_packer.dart';
 import 'package:bili_novel_packer/light_novel/base/light_novel_cover_detector.dart';
@@ -53,6 +54,7 @@ class NovelPacker {
       for (var volume in arg.packVolumes) {
         await _packVolume(volume, arg.addChapterTitle, callback);
       }
+      exit(0);
     }
   }
 
@@ -147,7 +149,13 @@ class NovelPacker {
   ) async {
     String? src = image.attributes["src"];
     if (src == null) return null;
-    Uint8List data = await lightNovelSource.getImage(src);
+    Uint8List data = Uint8List(0);
+    try {
+      ///  防止异常中断程序后续执行
+      data = await lightNovelSource.getImage(src);
+    } on TimeoutException {
+      data = Uint8List(0);
+    }
     String href = "images/${URLUtil.getFileName(src)}";
     image.attributes["src"] = href;
     return MapEntry("OEBPS/$href", data);
