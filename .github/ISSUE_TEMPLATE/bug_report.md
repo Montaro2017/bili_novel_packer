@@ -1,38 +1,10 @@
----
-name: Bug report
-about: Create a report to help us improve
-title: ''
-labels: ''
-assignees: ''
+### 使用版本
+使用版本: 0.1.2-M7 (请使用最新版尝试是否仍有问题)
 
----
+### 复现步骤
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+1. 输入网址：http://w.linovelib.com/novel/1.html
+2. 选择分卷：全部
+3. 错误信息：错误信息截图
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
-
-**Expected behavior**
-A clear and concise description of what you expected to happen.
-
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
-
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
-
-**Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Browser [e.g. stock browser, safari]
- - Version [e.g. 22]
-
-**Additional context**
-Add any other context about the problem here.
+如果闪退请使用CMD执行exe文件重复闪退操作，最后可以看到错误信息
