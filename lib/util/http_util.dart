@@ -7,12 +7,16 @@ import 'package:http/http.dart' as http;
 import 'package:retry/retry.dart';
 
 class HttpUtil {
+
+  // 默认超时时间 单位秒
+  static const int defaultTimeout = 10;
+
   HttpUtil._();
 
   static Future<Uint8List> getBytes(
     String url, {
     Map<String, String>? headers,
-    Duration timeout = const Duration(seconds: 10),
+    Duration timeout = const Duration(seconds: defaultTimeout),
   }) async {
     return retry(
       () => http.get(Uri.parse(url), headers: headers).timeout(timeout),
@@ -23,7 +27,7 @@ class HttpUtil {
   static Future<String> getString(
     String url, {
     Map<String, String>? headers,
-    Duration timeout = const Duration(seconds: 3),
+    Duration timeout = const Duration(seconds: defaultTimeout),
   }) async {
     return retry(
       () => http.get(Uri.parse(url), headers: headers).timeout(timeout),
@@ -34,7 +38,7 @@ class HttpUtil {
   static Future<String> getStringFromGbk(
     String url, {
     Map<String, String>? headers,
-    Duration timeout = const Duration(seconds: 3),
+    Duration timeout = const Duration(seconds: defaultTimeout),
   }) async {
     return retry(
       () => http.get(Uri.parse(url), headers: headers).timeout(timeout),
