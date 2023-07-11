@@ -62,6 +62,9 @@ class Volume {
 
   @override
   String toString() {
+    if (volumeName == "") {
+      return catalog.novel.title;
+    }
     return volumeName;
   }
 }
