@@ -55,6 +55,10 @@ class BiliLightNovelSource implements LightNovelSource {
     var catalog = Catalog(novel);
     var children = doc.querySelector("#volumes")!.children;
     Volume? volume;
+    // 如果没有卷标题 则将书名直接作为卷名
+    if (doc.querySelector(".chapter-bar") == null) {
+      volume = Volume("", catalog);
+    }
     for (var child in children) {
       if (child.classes.contains("chapter-bar")) {
         if (volume != null) {
@@ -76,6 +80,7 @@ class BiliLightNovelSource implements LightNovelSource {
         }
       }
     }
+
     if (volume != null) {
       catalog.volumes.add(volume);
     }
