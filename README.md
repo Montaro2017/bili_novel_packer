@@ -1,6 +1,10 @@
-# 轻小说打包器
+<h1 align="center">轻小说打包器</h1>
 
-[Gitee](https://gitee.com/Montaro2017/bili_novel_packer) | [Github](https://github.com/Montaro2017/bili_novel_packer)
+<hr/>
+
+<p align="center">
+    <a href="https://gitee.com/Montaro2017/bili_novel_packer">Gitee</a> / <a href="https://github.com/Montaro2017/bili_novel_packer">GitHub</a>
+</p>
 
 ## 介绍
 
