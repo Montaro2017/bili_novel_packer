@@ -142,5 +142,6 @@ class EpubPacker {
     for (var archiveFile in archiveFiles) {
       zip.addArchiveFile(archiveFile);
     }
+    zip.close();
   }
 }
