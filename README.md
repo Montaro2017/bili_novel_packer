@@ -1,10 +1,19 @@
 <h1 align="center">轻小说打包器</h1>
 
-<hr/>
+<p align="center">
+    <img alt="GitHub" src="https://img.shields.io/github/license/Montaro2017/bili_novel_packer">
+    <img alt="Static Badge" src="https://img.shields.io/badge/language-Dart-britness">
+    <a href='https://gitee.com/Montaro2017/bili_novel_packer/'><img src='https://gitee.com/Montaro2017/bili_novel_packer/badge/star.svg?theme=dark' alt='star'></img></a>
+    <a target="_blank" href='https://github.com/Montaro2017/bili_novel_packer'>
+		<img src="https://img.shields.io/github/stars/Montaro2017/bili_novel_packer?logo=GitHub" alt="github star"/>
+	</a>
+</p>
 
 <p align="center">
     <a href="https://gitee.com/Montaro2017/bili_novel_packer">Gitee</a> / <a href="https://github.com/Montaro2017/bili_novel_packer">GitHub</a>
 </p>
+
+<hr/>
 
 ## 介绍
 
