@@ -26,7 +26,7 @@
 
 ## 下载
 
-[点此下载](https://gitee.com/Montaro2017/bili_novel_packer/releases)
+[国内Gitee](https://gitee.com/Montaro2017/bili_novel_packer/releases) / [国外GitHub](https://github.com/Montaro2017/bili_novel_packer/releases)
 
 ## 使用
 双击exe或者使用命令提示符都可。
