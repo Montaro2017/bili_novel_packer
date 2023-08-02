@@ -249,6 +249,8 @@ class BiliLightNovelSource implements LightNovelSource {
     if (!src.startsWith("http")) {
       src = "$domain/$src";
     }
+    // 处理图片url域名特殊字符 𝘣 = \ud835\ude23
+    src = src.replaceAll("\ud835\ude23", "b");
     return HttpUtil.getBytes(src, headers: {
       "referer": domain,
     });
