@@ -219,8 +219,9 @@ class BiliLightNovelSource implements LightNovelSource {
     String str = element.innerHtml;
     StringBuffer sb = StringBuffer();
     for (var i = 0; i < str.length; i++) {
-      String? replacement = secretMap[str[i]] ?? str[i];
-      sb.write(replacement);
+      String beforeChar = str[i];
+      String? replacement = secretMap[beforeChar];
+      sb.write(replacement ?? beforeChar);
     }
     element.innerHtml = sb.toString();
   }
