@@ -1,7 +1,7 @@
 ---
 name: Bug report
 about: Create a report to help us improve
-title: "[BUG]"
+title: "[BUG] 在此输入问题描述"
 labels: bug
 assignees: Montaro2017
 
