@@ -1,6 +1,6 @@
-import 'package:xml/xml.dart';
 import 'package:bili_novel_packer/epub_packer/epub_node.dart';
-
+import 'package:bili_novel_packer/util/sequence.dart';
+import 'package:xml/xml.dart';
 
 /// toc.ncx
 class EpubNavigator implements EpubNode {
@@ -30,8 +30,8 @@ class EpubNavigator implements EpubNode {
     );
   }
 
-  void addNavMapItem(String title, String src) {
-    _navMap.addNavMap(_NavMapItem(title, src));
+  void addNavPoint(NavPoint navPoint) {
+    _navMap.addNavPoint(navPoint);
   }
 
   @override
@@ -52,7 +52,6 @@ class EpubNavigator implements EpubNode {
 }
 
 class _Head extends EpubChildNode {
-
   // uuid
   late String bookUuid;
 
@@ -110,34 +109,40 @@ class _DocTitle extends EpubChildNode {
 }
 
 class _NavMap extends EpubChildNode {
-  final List<_NavMapItem> _itemList = [];
+  final List<NavPoint> _navPointList = [];
+  final Sequence _seq = Sequence();
 
   _NavMap(super.builder);
 
-  void addNavMap(_NavMapItem item) {
-    _itemList.add(item);
+  void addNavPoint(NavPoint navPoint) {
+    _navPointList.add(navPoint);
   }
 
   @override
   void build() {
     builder.element("navMap", nest: () {
-      for (int i = 0; i < _itemList.length; i++) {
-        _NavMapItem item = _itemList[i];
-        navPoint(item, i + 1);
+      for (int i = 0; i < _navPointList.length; i++) {
+        NavPoint navPoint = _navPointList[i];
+        String id = "navPoint-${_seq.next}";
+        _navPoint(navPoint, id);
       }
     });
   }
 
-  void navPoint(_NavMapItem item, int order) {
+  void _navPoint(NavPoint navPoint, String id) {
     builder.element(
       "navPoint",
-      attributes: {
-        "id": "navPoint-$order",
-        "playorder": "$order",
-      },
+      attributes: {"id": id},
       nest: () {
-        navLabel(item.title);
-        content(item.src);
+        navLabel(navPoint.title);
+        if (navPoint.src != null) {
+          content(navPoint.src!);
+        }
+        Sequence seq = Sequence();
+        for (var child in navPoint.children) {
+          String childId = "$id-${seq.next}";
+          _navPoint(child, childId);
+        }
       },
     );
   }
@@ -158,9 +163,18 @@ class _NavMap extends EpubChildNode {
   }
 }
 
-class _NavMapItem {
+class NavPoint {
   String title;
-  String src;
+  String? src;
+  List<NavPoint> children = [];
 
-  _NavMapItem(this.title, this.src);
+  NavPoint(
+    this.title, {
+    this.src,
+    this.children = const [],
+  });
+
+  void addChild(NavPoint navPoint) {
+    children.add(navPoint);
+  }
 }

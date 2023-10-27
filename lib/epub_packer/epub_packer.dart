@@ -88,7 +88,8 @@ class EpubPacker {
     _opf.addChapter(
       ManifestItem(id, href, mediaType),
     );
-    _navigator.addNavMapItem(title, href);
+    NavPoint navPoint = NavPoint(title, src: href);
+    _navigator.addNavPoint(navPoint);
   }
 
   /// 添加图片资源
