@@ -49,8 +49,8 @@ PackArgument readPackArgument(Catalog catalog) {
   var select = readSelectVolume(catalog);
   arg.packVolumes = select;
 
-  Console.write("\n");
   if (arg.packVolumes.length > 1) {
+    Console.write("\n");
     arg.combineVolume =
         Chooser(["是", "否"], message: "是否合并选择的分卷？").chooseSync() == "是";
   }
