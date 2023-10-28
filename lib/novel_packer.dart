@@ -215,7 +215,7 @@ class NovelPacker {
     }
     // 写出目标文件
     packer.pack();
-    Console.write("打包完成: $packer.absolutePath\n\n");
+    Console.write("打包完成: ${packer.absolutePath}\n\n");
   }
 
   String _getEpubName(Volume volume) {
