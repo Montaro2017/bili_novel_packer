@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:bili_novel_packer/light_novel/base/light_novel_model.dart';
 import 'package:bili_novel_packer/novel_packer.dart';
 import 'package:bili_novel_packer/pack_argument.dart';
-import 'package:bili_novel_packer/pack_callback.dart';
 import 'package:console/console.dart';
 
 const String gitUrl = "https://gitee.com/Montaro2017/bili_novel_packer";
@@ -25,10 +24,10 @@ void printWelcome() {
 void start() async {
   var url = readUrl();
   var packer = NovelPacker.fromUrl(url);
-  printNovelDetail(await packer.getNovel());
-  Catalog catalog = await packer.getCatalog();
-  var arg = readPackArgument(catalog);
-  packer.pack(arg, ConsolePackCallback());
+  await packer.init();
+  printNovelDetail(packer.novel);
+  var arg = readPackArgument(packer.catalog);
+  packer.pack(arg);
 }
 
 String readUrl() {
@@ -51,7 +50,12 @@ PackArgument readPackArgument(Catalog catalog) {
   arg.packVolumes = select;
 
   Console.write("\n");
+  if (arg.packVolumes.length > 1) {
+    arg.combineVolume =
+        Chooser(["是", "否"], message: "是否合并选择的分卷？").chooseSync() == "是";
+  }
 
+  Console.write("\n");
   arg.addChapterTitle =
       Chooser(["是", "否"], message: "是否为每章添加标题?").chooseSync() == "是";
   Console.write("\n");

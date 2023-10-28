@@ -171,8 +171,8 @@ class NavPoint {
   NavPoint(
     this.title, {
     this.src,
-    this.children = const [],
-  });
+    children,
+  }): children = children ?? [];
 
   void addChild(NavPoint navPoint) {
     children.add(navPoint);

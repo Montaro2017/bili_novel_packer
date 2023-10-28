@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:archive/archive_io.dart';
@@ -21,6 +22,10 @@ class EpubPacker {
   final EpubOpenPackageFormat _opf = EpubOpenPackageFormat();
 
   final List<ArchiveFile> archiveFiles = [];
+
+  String get absolutePath {
+    return File(epubFilePath).absolute.path;
+  }
 
   String get docTitle => _navigator.docTitle;
 
@@ -74,6 +79,7 @@ class EpubPacker {
   void addChapter({
     String? id,
     String mediaType = epub_media_type.xhtml,
+    bool addNavPoint = true,
     required String name,
     required String title,
     required String chapterContent,
@@ -88,8 +94,10 @@ class EpubPacker {
     _opf.addChapter(
       ManifestItem(id, href, mediaType),
     );
-    NavPoint navPoint = NavPoint(title, src: href);
-    _navigator.addNavPoint(navPoint);
+    if (addNavPoint) {
+      NavPoint navPoint = NavPoint(title, src: href);
+      _navigator.addNavPoint(navPoint);
+    }
   }
 
   /// 添加图片资源
@@ -109,6 +117,10 @@ class EpubPacker {
       ArchiveFile(name, data.length, data),
     );
     _opf.addImage(ManifestItem(id, href, mediaType));
+  }
+
+  void addNavPoint(NavPoint navPoint) {
+    _navigator.addNavPoint(navPoint);
   }
 
   /// 执行打包操作
