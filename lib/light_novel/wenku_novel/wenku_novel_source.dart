@@ -26,11 +26,16 @@ class WenkuNovelSource implements LightNovelSource {
     var doc = parse(await HttpUtil.getStringFromGbk("$domain/book/$id.htm"));
 
     novel.id = id.toString();
-    novel.title = doc.querySelector("#content table:nth-child(1) span b")!.text;
+    novel.title = doc
+        .querySelector("#content")!
+        .querySelector("table:nth-child(1)")!
+        .querySelector("span b")!
+        .text;
     novel.coverUrl =
         doc.querySelector("#content table img")!.attributes["src"]!;
     List<Element> details = doc
-        .querySelector("#content table:nth-child(1) tr:nth-child(2)")!
+        .querySelector("#content table:nth-child(1)")!
+        .querySelector("tr:nth-child(2)")!
         .querySelectorAll("td");
     novel.status = details[2].text.replaceFirst("文章状态：", "");
     novel.author = details[1].text.replaceFirst("小说作者：", "");
@@ -44,7 +49,11 @@ class WenkuNovelSource implements LightNovelSource {
 
     novel.catalogUrl =
         doc.querySelector("legend + div > a")!.attributes["href"]!;
-
+    if (!novel.catalogUrl.startsWith("http")) {
+      novel.catalogUrl = domain +
+          (novel.catalogUrl.startsWith("/") ? "" : "/") +
+          novel.catalogUrl;
+    }
     return novel;
   }
 
