@@ -70,13 +70,13 @@ class NovelPacker {
       for (var volume in arg.packVolumes) {
         await _packVolume(volume, arg.addChapterTitle);
       }
-      exit(0);
     } else {
       // 合并分卷
       String title = _sanitizeFileName(novel.title);
       String path = "$title${Platform.pathSeparator}$title.epub";
       await _combineVolume(path, arg);
     }
+    exit(0);
   }
 
   Future<void> _combineVolume(
@@ -124,7 +124,6 @@ class NovelPacker {
     }
     packer.pack();
     Console.write("打包完成: ${packer.absolutePath}");
-    exit(0);
   }
 
   Future<Document> _resolveChapter(
@@ -220,7 +219,6 @@ class NovelPacker {
     // 写出目标文件
     packer.pack();
     Console.write("打包完成: ${packer.absolutePath}\n\n");
-    exit(0);
   }
 
   String _getEpubName(Volume volume) {
