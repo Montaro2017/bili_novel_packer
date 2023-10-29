@@ -8,6 +8,8 @@ import 'package:bili_novel_packer/util/http_util.dart';
 import 'package:bili_novel_packer/util/url_util.dart';
 import 'package:html/dom.dart';
 import 'package:html/parser.dart';
+import 'package:retry/retry.dart';
+import 'package:synchronized/synchronized.dart';
 
 class WenkuNovelSource implements LightNovelSource {
   @override
@@ -19,11 +21,23 @@ class WenkuNovelSource implements LightNovelSource {
   static final RegExp _exp2 = RegExp("wenku8.net/novel/\\d+/(\\d+)/");
   static final String domain = "https://www.wenku8.net";
 
+  static final String userAgent =
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36";
+
+  static final Lock lock = Lock();
+
   @override
   Future<Novel> getNovel(String url) async {
     String id = _getId(url);
     WenkuNovel novel = WenkuNovel();
-    var doc = parse(await HttpUtil.getStringFromGbk("$domain/book/$id.htm"));
+    var doc = parse(
+      await HttpUtil.getStringFromGbk(
+        "$domain/book/$id.htm",
+        headers: {
+          "User-Agent": userAgent,
+        },
+      ),
+    );
 
     novel.id = id.toString();
     novel.title = doc
@@ -61,7 +75,14 @@ class WenkuNovelSource implements LightNovelSource {
   Future<Catalog> getNovelCatalog(Novel novel) async {
     String url = (novel as WenkuNovel).catalogUrl;
     String prefix = URLUtil.resolve(url, "./");
-    var doc = parse(await HttpUtil.getStringFromGbk(url));
+    var doc = parse(
+      await HttpUtil.getStringFromGbk(
+        url,
+        headers: {
+          "User-Agent": userAgent,
+        },
+      ),
+    );
     var tdList = doc.querySelectorAll("table td");
     var catalog = Catalog(novel);
     Volume? volume;
@@ -98,12 +119,33 @@ class WenkuNovelSource implements LightNovelSource {
 
   @override
   Future<Document> getNovelChapter(Chapter chapter) async {
-    String url = chapter.chapterUrl!;
-    var doc = parse(await HttpUtil.getStringFromGbk(url));
-    var content = doc.querySelector("#content")!;
-    HTMLUtil.removeElements(content.querySelectorAll("#contentdp"));
-    HTMLUtil.removeElements(content.querySelectorAll("br"));
-    return _wrapDocument(content);
+    return retry(
+      maxAttempts: 10,
+      retryIf: (e) => true,
+      delayFactor: Duration(milliseconds: 300),
+      maxDelay: Duration(seconds: 3),
+      () => _getNovelChapter(chapter),
+    );
+  }
+
+  Future<Document> _getNovelChapter(Chapter chapter) async {
+    return await lock.synchronized(() async {
+      String url = chapter.chapterUrl!;
+      // await Future.delayed(Duration(milliseconds: 0));
+      var doc = parse(await HttpUtil.getStringFromGbk(
+        url,
+        headers: {
+          "User-Agent": userAgent,
+          "Accept":
+              "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
+        },
+      ));
+      var content = doc.querySelector("#content");
+      if (content == null && doc.outerHtml.contains("Cloudflare")) throw Exception("Cloudflare Error");
+      HTMLUtil.removeElements(content!.querySelectorAll("#contentdp"));
+      HTMLUtil.removeElements(content.querySelectorAll("br"));
+      return _wrapDocument(content);
+    });
   }
 
   @override
@@ -145,6 +187,11 @@ class WenkuNovelSource implements LightNovelSource {
 
   @override
   Future<Uint8List> getImage(String src) {
-    return HttpUtil.getBytes(src);
+    return HttpUtil.getBytes(
+      src,
+      headers: {
+        "User-Agent": userAgent,
+      },
+    );
   }
 }

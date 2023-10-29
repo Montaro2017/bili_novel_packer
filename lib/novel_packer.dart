@@ -63,6 +63,9 @@ class NovelPacker {
   }
 
   void pack(PackArgument arg) async {
+    if (lightNovelSource is WenkuNovelSource) {
+      print("[注意]: 轻小说文库设置了速率限制，不能请求过快，因此打包速度较慢，请耐心等待.\n");
+    }
     if (!arg.combineVolume) {
       for (var volume in arg.packVolumes) {
         await _packVolume(volume, arg.addChapterTitle);
