@@ -6,7 +6,7 @@ import 'package:bili_novel_packer/pack_argument.dart';
 import 'package:console/console.dart';
 
 const String gitUrl = "https://gitee.com/Montaro2017/bili_novel_packer";
-const String version = "0.2.2";
+const String version = "0.2.3";
 
 void main(List<String> args) async {
   printWelcome();
