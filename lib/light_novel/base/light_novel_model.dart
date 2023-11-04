@@ -85,7 +85,7 @@ class Chapter {
   Chapter(this.chapterName, this.chapterUrl, this.volume);
 
   @override
-  int get hashCode => [chapterContent, chapterUrl].toString().hashCode;
+  int get hashCode => [chapterName, chapterUrl].toString().hashCode;
 
   @override
   bool operator ==(Object other) {
