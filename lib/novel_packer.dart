@@ -68,6 +68,8 @@ class NovelPacker {
     }
     if (!arg.combineVolume) {
       for (var volume in arg.packVolumes) {
+        _imageSequence.reset();
+        _chapterSequence.reset();
         await _packVolume(volume, arg.addChapterTitle);
       }
     } else {

@@ -11,4 +11,8 @@ class Sequence {
   int get next {
     return nowVal = nowVal + step;
   }
+
+  void reset() {
+    nowVal = start - step;
+  }
 }
