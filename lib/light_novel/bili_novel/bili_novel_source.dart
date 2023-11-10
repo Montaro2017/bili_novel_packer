@@ -161,7 +161,7 @@ class BiliLightNovelSource implements LightNovelSource {
         )
         .toList();
     int pos = chapters.indexOf(chapter);
-    if (pos < 0 || pos > chapters.length - 1) return null;
+    if (pos < 0 || pos >= chapters.length - 1) return null;
     return chapters[pos + 1];
   }
 
@@ -173,7 +173,7 @@ class BiliLightNovelSource implements LightNovelSource {
   /// 获取章节一页内容
   Future<ChapterPage> _getChapterPage(String url) async {
     var doc = parse(await HttpUtil.getString(url));
-    var content = doc.querySelector("#ccacontent")!;
+    var content = doc.querySelector("#acontentz")!;
 
     String? prevPage;
     String? nextPage;
