@@ -6,44 +6,44 @@ import 'package:xml/xml.dart';
 class EpubOpenPackageFormat implements EpubNode {
   final XmlBuilder _builder = XmlBuilder();
 
-  late final _MetaData _metaData;
-  late final _Manifest _manifest;
-  late final _Spine _spine;
+  late final MetaData metaData;
+  late final Manifest manifest;
+  late final Spine spine;
   String? _cover;
 
-  String get bookUuid => _metaData.bookUuid;
+  String get bookUuid => metaData.bookUuid;
 
-  set bookUuid(String bookUuid) => _metaData.bookUuid = bookUuid;
+  set bookUuid(String bookUuid) => metaData.bookUuid = bookUuid;
 
-  String get docTitle => _metaData.docTitle;
+  String get docTitle => metaData.docTitle;
 
-  set docTitle(String docTitle) => _metaData.docTitle = docTitle;
+  set docTitle(String docTitle) => metaData.docTitle = docTitle;
 
-  String get creator => _metaData.creator;
+  String get creator => metaData.creator;
 
-  set creator(String creator) => _metaData.creator = creator;
+  set creator(String creator) => metaData.creator = creator;
 
   String? get cover => _cover;
 
   set cover(String? cover) {
     _cover = cover;
-    _manifest.cover = cover;
+    manifest.cover = cover;
   }
 
   EpubOpenPackageFormat() {
-    _metaData = _MetaData(_builder);
-    _manifest = _Manifest(_builder);
-    _spine = _Spine(_builder);
+    metaData = MetaData(_builder);
+    manifest = Manifest(_builder);
+    spine = Spine(_builder);
     _builder.declaration(encoding: "UTF-8");
   }
 
   void addImage(ManifestItem item) {
-    _manifest.addManifestItem(item);
+    manifest.addManifestItem(item);
   }
 
   void addChapter(ManifestItem item) {
-    _manifest.addManifestItem(item);
-    _spine.addRef(item.id);
+    manifest.addManifestItem(item);
+    spine.addRef(item.id);
   }
 
   @override
@@ -57,20 +57,24 @@ class EpubOpenPackageFormat implements EpubNode {
         "version": "2.0"
       },
       nest: () {
-        _metaData.build();
-        _manifest.build();
-        _spine.build();
+        metaData.build();
+        manifest.build();
+        spine.build();
       },
     );
     return _builder.buildDocument();
   }
 }
 
-class _MetaData extends EpubChildNode {
-  _MetaData(super.builder);
+class MetaData extends EpubChildNode {
+  MetaData(super.builder);
 
   String? coverContent;
   String language = "zh-CN";
+  String? source;
+  String? description;
+  String? publisher;
+  List<String> subjects = [];
   late String bookUuid;
   late String docTitle;
   late String creator;
@@ -86,6 +90,20 @@ class _MetaData extends EpubChildNode {
       builder.element("dc:language", nest: language);
       builder.element("dc:title", nest: docTitle);
       builder.element("dc:creator", nest: creator);
+      if (source != null) {
+        builder.element("dc:source", nest: source);
+      }
+      if (description != null) {
+        builder.element("dc:description", nest: description);
+      }
+      if (publisher != null) {
+        builder.element("dc:publisher", nest: publisher);
+      }
+      if (subjects.isNotEmpty) {
+        for (var subject in subjects) {
+          builder.element("dc:subject", nest: subject);
+        }
+      }
       builder.element(
         "meta",
         attributes: {
@@ -97,8 +115,8 @@ class _MetaData extends EpubChildNode {
   }
 }
 
-class _Manifest extends EpubChildNode {
-  _Manifest(super.builder);
+class Manifest extends EpubChildNode {
+  Manifest(super.builder);
 
   String? cover;
 
@@ -149,8 +167,8 @@ class ManifestItem {
       : href = href.replaceAll("\\", "/");
 }
 
-class _Spine extends EpubChildNode {
-  _Spine(super.builder);
+class Spine extends EpubChildNode {
+  Spine(super.builder);
 
   List<String> refList = [];
 

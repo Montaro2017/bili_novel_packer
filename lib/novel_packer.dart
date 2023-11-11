@@ -88,6 +88,9 @@ class NovelPacker {
     EpubPacker packer = EpubPacker(path);
     packer.docTitle = novel.title;
     packer.creator = novel.author;
+    packer.source = novel.url;
+    packer.publisher = novel.publisher;
+    packer.subjects = novel.tags ?? [];
     // 封面使用小说封面
     Uint8List coverData = await _getSingleImage(novel.coverUrl);
     String coverName =
@@ -190,6 +193,9 @@ class NovelPacker {
     EpubPacker packer = EpubPacker(_getEpubName(volume));
     packer.docTitle = "${volume.catalog.novel.title} ${volume.volumeName}";
     packer.creator = volume.catalog.novel.author;
+    packer.source = novel.url;
+    packer.publisher = novel.publisher;
+    packer.subjects = novel.tags ?? [];
 
     LightNovelCoverDetector detector = LightNovelCoverDetector();
 

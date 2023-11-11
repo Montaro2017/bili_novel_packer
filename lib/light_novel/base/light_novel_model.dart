@@ -20,6 +20,9 @@ class Novel {
   // 标签
   List<String>? tags;
 
+  // 文库
+  String? publisher;
+
   // 简介
   String? description;
 

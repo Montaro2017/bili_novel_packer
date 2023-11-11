@@ -26,12 +26,14 @@ class BiliLightNovelSource implements LightNovelSource {
     var doc = parse(await HttpUtil.getString("$domain/novel/$id.html"));
 
     novel.id = id.toString();
+    novel.url = url;
     novel.title = doc.querySelector(".book-title")!.text;
     novel.coverUrl = doc.querySelector(".book-layout img")!.attributes["src"]!;
     novel.tags = doc
         .querySelectorAll(".book-cell .book-meta span em")
         .map((e) => e.text)
         .toList();
+    novel.publisher = doc.querySelector(".tag-small.orange")?.text;
     novel.status =
         doc.querySelector(".book-cell .book-meta+.book-meta")!.nodes.last.text!;
     novel.author = doc.querySelector(".book-rand-a span")!.text;

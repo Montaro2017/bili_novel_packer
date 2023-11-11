@@ -45,6 +45,18 @@ class EpubPacker {
 
   set creator(creator) => _opf.creator = creator;
 
+  String? get source => _opf.metaData.source;
+
+  set source(String? source) => _opf.metaData.source = source;
+
+  String? get publisher => _opf.metaData.publisher;
+
+  set publisher(String? publisher) => _opf.metaData.publisher = publisher;
+
+  List<String> get subjects => _opf.metaData.subjects;
+
+  set subjects(List<String> subjects) => _opf.metaData.subjects = subjects;
+
   String? get cover => _opf.cover;
 
   set cover(String? id) => _opf.cover = id;
