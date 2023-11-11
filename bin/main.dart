@@ -23,11 +23,15 @@ void printWelcome() {
 
 void start() async {
   var url = readUrl();
+  print("正在加载数据...");
   var packer = NovelPacker.fromUrl(url);
   await packer.init();
   printNovelDetail(packer.novel);
   var arg = readPackArgument(packer.catalog);
-  packer.pack(arg);
+  await packer.pack(arg);
+  print("全部任务已完成，按回车键退出.");
+  Console.readLine();
+  exit(0);
 }
 
 String readUrl() {
