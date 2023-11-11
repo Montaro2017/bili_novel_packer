@@ -98,6 +98,9 @@ class BiliLightNovelSource implements LightNovelSource {
     String? nextPageUrl = chapter.chapterUrl!;
     do {
       ChapterPage page = await _getChapterPage(nextPageUrl!);
+      if (page.title != null && page.title != chapter.chapterName) {
+        chapter.chapterName = page.title!;
+      }
       for (var content in page.contents) {
         doc.body!.append(content);
       }
@@ -173,6 +176,9 @@ class BiliLightNovelSource implements LightNovelSource {
   /// 获取章节一页内容
   Future<ChapterPage> _getChapterPage(String url) async {
     var doc = parse(await HttpUtil.getString(url));
+
+    String? title = doc.querySelector("#atitle")?.text;
+
     var content = doc.querySelector("#acontentz")!;
 
     String? prevPage;
@@ -206,6 +212,7 @@ class BiliLightNovelSource implements LightNovelSource {
     HTMLUtil.removeElements(content.querySelectorAll(".bd"));
 
     return ChapterPage(
+      title: title,
       content.children,
       prevPageUrl: prevPage,
       nextPageUrl: nextPage,
@@ -259,6 +266,7 @@ class BiliLightNovelSource implements LightNovelSource {
 }
 
 class ChapterPage {
+  String? title;
   List<Element> contents;
   String? prevPageUrl;
   String? nextPageUrl;
@@ -267,6 +275,7 @@ class ChapterPage {
 
   ChapterPage(
     this.contents, {
+    this.title,
     this.prevPageUrl,
     this.nextPageUrl,
     this.prevChapterUrl,
