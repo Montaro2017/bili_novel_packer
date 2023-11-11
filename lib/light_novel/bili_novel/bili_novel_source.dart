@@ -179,7 +179,10 @@ class BiliLightNovelSource implements LightNovelSource {
   Future<ChapterPage> _getChapterPage(String url) async {
     var doc = parse(await HttpUtil.getString(url));
 
-    String? title = doc.querySelector("#atitle")?.text;
+    String? title;
+    if (!url.contains("_")) {
+      title = doc.querySelector("#atitle")?.text;
+    }
 
     var content = doc.querySelector("#acontentz")!;
 
