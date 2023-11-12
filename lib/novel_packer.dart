@@ -90,6 +90,7 @@ class NovelPacker {
     packer.source = novel.url;
     packer.publisher = novel.publisher;
     packer.subjects = novel.tags ?? [];
+    packer.description = novel.description;
     // 封面使用小说封面
     Uint8List coverData = await _getSingleImage(novel.coverUrl);
     String coverName =
@@ -195,6 +196,7 @@ class NovelPacker {
     packer.source = novel.url;
     packer.publisher = novel.publisher;
     packer.subjects = novel.tags ?? [];
+    packer.description = novel.description;
 
     LightNovelCoverDetector detector = LightNovelCoverDetector();
 
