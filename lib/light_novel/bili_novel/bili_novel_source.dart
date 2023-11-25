@@ -198,13 +198,13 @@ class BiliLightNovelSource implements LightNovelSource {
     var prev = doc.querySelector("#footlink a:first-child");
     var next = doc.querySelector("#footlink a:last-child");
 
-    if (prev != null && prev.text == "上一页" && prevUrl != null) {
+    if (prev != null && (prev.text == "上一页" || prev.text == "上一頁") && prevUrl != null) {
       prevPage = domain + prevUrl;
     } else if (prev != null && prevUrl != null) {
       prevChapter = domain + prevUrl;
     }
 
-    if (next != null && next.text == "下一页" && nextUrl != null) {
+    if (next != null && (next.text == "下一页" || next.text == "下一頁") && nextUrl != null) {
       nextPage = domain + nextUrl;
     } else if (next != null && nextUrl != null) {
       nextChapter = domain + nextUrl;
