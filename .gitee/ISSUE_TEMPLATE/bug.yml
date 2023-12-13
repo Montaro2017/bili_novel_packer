@@ -1,13 +1,17 @@
 name: BUG反馈
 description: 打包出现问题、程序闪退、EPUB无法正常查看等
-title: "[BUG]"
+title: "[BUG] "
 labels: ["bug"]
 assignees:
   - "Montaro2017"
 body:
   - type: markdown
     attributes:
-      value: 在反馈问题前，请确保使用的时最新版本
+      value: 在反馈问题前，请确保使用的是最新版本
+  - type: textarea
+    attributes:
+      label: 版本号
+      placeholder: 0.2.7
   - type: textarea
     attributes:
       label: 输入的网址
