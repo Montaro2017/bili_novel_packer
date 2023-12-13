@@ -29,6 +29,7 @@ void start() async {
   printNovelDetail(packer.novel);
   var arg = readPackArgument(packer.catalog);
   await packer.pack(arg);
+  // 防止打包完成后直接退出 无法查看到结果
   print("全部任务已完成，按回车键退出.");
   Console.readLine();
   exit(0);
@@ -56,12 +57,12 @@ PackArgument readPackArgument(Catalog catalog) {
   if (arg.packVolumes.length > 1) {
     Console.write("\n");
     arg.combineVolume =
-        Chooser(["是", "否"], message: "是否合并选择的分卷？").chooseSync() == "是";
+        Chooser(["是", "否"], message: "是否合并选择的分卷为一个文件？").chooseSync() == "是";
   }
 
   Console.write("\n");
   arg.addChapterTitle =
-      Chooser(["是", "否"], message: "是否为每章添加标题?").chooseSync() == "是";
+      Chooser(["是", "否"], message: "是否在每章开头添加章节标题?").chooseSync() == "是";
   Console.write("\n");
   return arg;
 }
