@@ -15,7 +15,7 @@ void main(List<String> args) async {
 
 void printWelcome() {
   print("欢迎使用轻小说打包器!");
-  print("作者: Sparks");
+  print("作者: Spark");
   print("当前版本: $version");
   print("如遇报错请先查看能否正常访问输入网址");
   print("否则请至开源地址携带报错信息进行反馈: $gitUrl");
@@ -38,7 +38,7 @@ void start() async {
 String readUrl() {
   String? url;
   do {
-    print("请输入URL(目前暂不支持直接输入id):");
+    print("请输入URL(支持哔哩轻小说&轻小说文库):");
     url = stdin.readLineSync();
   } while (url == null || url.isEmpty);
   return url;
