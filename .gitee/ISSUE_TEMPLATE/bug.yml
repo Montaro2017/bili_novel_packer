@@ -1,0 +1,26 @@
+name: BUG反馈
+description: 打包出现问题、程序闪退、EPUB无法正常查看等
+title: "[BUG]"
+labels: ["bug"]
+assignees:
+  - "Montaro2017"
+body:
+  - type: markdown
+    attributes:
+      value: 在反馈问题前，请确保使用的时最新版本
+  - type: textarea
+    attributes:
+      label: 输入的网址
+      placeholder: "https://w.linovelib.com/novel/1.html"
+  - type: textarea
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 选择分卷 全部/第2卷
+        2. 选择不合并分卷
+        3. 选择不添加章节标题
+  - type: textarea
+    attributes:
+      label: 错误信息
+      description: 如果闪退使用cmd执行exe文件可以查看到错误信息
+      placeholder: 错误信息或截图
