@@ -17,14 +17,14 @@ void printWelcome() {
   print("欢迎使用轻小说打包器!");
   print("作者: Sparks");
   print("当前版本: $version");
-  print("如遇报错请先查看能否正常访问 https://w.linovelib.com");
+  print("如遇报错请先查看能否正常访问输入网址");
   print("否则请至开源地址携带报错信息进行反馈: $gitUrl");
 }
 
 void start() async {
   var url = readUrl();
-  print("正在加载数据...");
   var packer = NovelPacker.fromUrl(url);
+  print("正在加载数据...");
   await packer.init();
   printNovelDetail(packer.novel);
   var arg = readPackArgument(packer.catalog);

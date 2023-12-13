@@ -2,21 +2,29 @@ import 'dart:typed_data';
 
 import 'package:bili_novel_packer/light_novel/base/light_novel_model.dart';
 import 'package:bili_novel_packer/light_novel/base/light_novel_source.dart';
-import 'package:bili_novel_packer/light_novel/bili_novel/bili_novel_constant.dart';
+import 'package:bili_novel_packer/light_novel/bili_novel/bili_novel_secret.dart';
 import 'package:bili_novel_packer/util/html_util.dart';
 import 'package:bili_novel_packer/util/http_util.dart';
 import 'package:html/dom.dart';
 import 'package:html/parser.dart';
 
 class BiliLightNovelSource implements LightNovelSource {
-  static final RegExp _exp = RegExp("linovelib\\.com/novel/(\\d+)");
-  static final String domain = "https://w.linovelib.com";
+  static final RegExp _exp =
+      RegExp("(?:linovelib|bilinovel)\\.com/novel/(\\d+)");
+  static final String domain = "https://www.bilinovel.com";
+
+  static final Map<String, String> secretMap = {};
 
   @override
   final String name = "哔哩轻小说";
 
   @override
-  final String sourceUrl = "https://w.linovelib.com";
+  final String sourceUrl = "https://www.bilinovel.com";
+
+  static void setSecretMap(Map<String, String> map) {
+    secretMap.clear();
+    secretMap.addAll(map);
+  }
 
   /// 获取小说基本信息
   @override
@@ -91,6 +99,9 @@ class BiliLightNovelSource implements LightNovelSource {
 
   @override
   Future<Document> getNovelChapter(Chapter chapter) async {
+    if (secretMap.isEmpty) {
+      initSecretMap();
+    }
     Document doc = Document.html(LightNovelSource.html);
 
     chapter.chapterUrl ??= await _getChapterUrl(chapter);
@@ -198,13 +209,17 @@ class BiliLightNovelSource implements LightNovelSource {
     var prev = doc.querySelector("#footlink a:first-child");
     var next = doc.querySelector("#footlink a:last-child");
 
-    if (prev != null && (prev.text == "上一页" || prev.text == "上一頁") && prevUrl != null) {
+    if (prev != null &&
+        (prev.text == "上一页" || prev.text == "上一頁") &&
+        prevUrl != null) {
       prevPage = domain + prevUrl;
     } else if (prev != null && prevUrl != null) {
       prevChapter = domain + prevUrl;
     }
 
-    if (next != null && (next.text == "下一页" || next.text == "下一頁") && nextUrl != null) {
+    if (next != null &&
+        (next.text == "下一页" || next.text == "下一頁") &&
+        nextUrl != null) {
       nextPage = domain + nextUrl;
     } else if (next != null && nextUrl != null) {
       nextChapter = domain + nextUrl;
