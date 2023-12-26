@@ -11,7 +11,7 @@ body:
   - type: textarea
     attributes:
       label: 版本号
-      placeholder: 0.2.7
+      placeholder: 0.2.8
   - type: textarea
     attributes:
       label: 输入的网址
