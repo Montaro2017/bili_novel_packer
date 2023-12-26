@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:bili_novel_packer/light_novel/base/light_novel_model.dart';
@@ -188,13 +189,12 @@ class BiliLightNovelSource implements LightNovelSource {
 
   /// 获取章节一页内容
   Future<ChapterPage> _getChapterPage(String url) async {
-    var doc = parse(await HttpUtil.getString(url));
+    var doc = parse(await httpGet(url));
 
     String? title;
     if (!url.contains("_")) {
       title = doc.querySelector("#atitle")?.text;
     }
-
     var content = doc.querySelector("#acontentz")!;
 
     String? prevPage;
@@ -269,6 +269,23 @@ class BiliLightNovelSource implements LightNovelSource {
         }
         image.attributes["src"] = src;
       }
+    }
+  }
+
+  /// 如果error code 则全部等待10秒再获取数据
+  Future<String> httpGet(String url) async {
+    // 用completer控制future结束 结束前下一个future不会执行
+    Completer completer = Completer<void>();
+    try {
+      String html = await HttpUtil.getString(url);
+      if (!html.contains("error code")) {
+        return html;
+      }
+      await Future.delayed(Duration(seconds: 10));
+      html = await httpGet(url);
+      return html;
+    } finally {
+      completer.complete();
     }
   }
 
