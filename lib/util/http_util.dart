@@ -8,7 +8,7 @@ import 'package:retry/retry.dart';
 
 class HttpUtil {
   // 默认超时时间 单位秒
-  static const int defaultTimeout = 10;
+  static const int defaultTimeout = 30;
   // 最大重试次数
   static const int maxAttempts = 5;
 
