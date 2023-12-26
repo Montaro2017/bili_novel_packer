@@ -10,7 +10,14 @@ const String version = "0.2.7";
 
 void main(List<String> args) async {
   printWelcome();
-  start();
+  try {
+    await start();
+  } catch (e, stackTrace) {
+    print(e);
+    print(stackTrace);
+    print("运行出错，按回车键退出.");
+    Console.readLine();
+  }
 }
 
 void printWelcome() {
@@ -21,7 +28,7 @@ void printWelcome() {
   print("否则请至开源地址携带报错信息进行反馈: $gitUrl");
 }
 
-void start() async {
+Future<void> start() async {
   var url = readUrl();
   var packer = NovelPacker.fromUrl(url);
   print("正在加载数据...");
