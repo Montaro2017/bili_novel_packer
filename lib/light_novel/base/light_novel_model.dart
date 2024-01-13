@@ -61,6 +61,9 @@ class Volume {
   // 章节列表
   List<Chapter> chapters = [];
 
+  // 分卷封面
+  String? cover;
+
   Volume(this.volumeName, this.catalog);
 
   @override

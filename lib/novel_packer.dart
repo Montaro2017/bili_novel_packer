@@ -221,13 +221,30 @@ class NovelPacker {
     }
 
     // 设置封面
-    String? cover = detector.detectCover();
-    if (cover != null) {
-      packer.cover = cover.replaceFirst("OEBPS/", "");
-    }
+    await _resolveCover(volume, packer, detector);
     // 写出目标文件
     packer.pack();
     Console.write("打包完成: ${packer.absolutePath}\n\n");
+  }
+
+  Future<void> _resolveCover(
+    Volume volume,
+    EpubPacker packer,
+    LightNovelCoverDetector coverDetector,
+  ) async {
+    // 优先使用目录中的封面 否则自动检测
+    if (volume.cover != null) {
+      Uint8List coverData = await _getSingleImage(volume.cover);
+      String coverName =
+          "images/${_imageSequence.next.toString().padLeft(6, '0')}.jpg";
+      packer.addImage(name: "OEBPS/$coverName", data: coverData);
+      packer.cover = coverName;
+    } else {
+      String? cover = coverDetector.detectCover();
+      if (cover != null) {
+        packer.cover = cover.replaceFirst("OEBPS/", "");
+      }
+    }
   }
 
   String _getEpubName(Volume volume) {

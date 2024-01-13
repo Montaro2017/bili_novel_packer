@@ -64,6 +64,7 @@ class BiliLightNovelSource implements LightNovelSource {
     var doc =
         parse(await HttpUtil.getString("$domain/novel/${novel.id}/catalog"));
     var catalog = Catalog(novel);
+    _replaceImageSrc(doc.body!);
     var children = doc.querySelector("#volumes")!.children;
     Volume? volume;
     // 如果没有卷标题 则将书名直接作为卷名
@@ -76,6 +77,13 @@ class BiliLightNovelSource implements LightNovelSource {
           catalog.volumes.add(volume);
         }
         volume = Volume(child.text, catalog);
+      } else if (child.classes.contains("volume-cover")) {
+        // 获取目录上的分卷封面
+        String? cover =
+            child.querySelector("a")?.querySelector("img")?.attributes["src"];
+        if (volume != null) {
+          volume.cover = cover;
+        }
       } else if (child.classes.contains("jsChapter")) {
         var link = child.querySelector("a")!;
         String name = link.text;
