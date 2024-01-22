@@ -16,6 +16,9 @@ class BiliLightNovelSource implements LightNovelSource {
 
   static final Map<String, String> secretMap = {};
 
+  static final String userAgent =
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1";
+
   @override
   final String name = "哔哩轻小说";
 
@@ -285,7 +288,13 @@ class BiliLightNovelSource implements LightNovelSource {
     // 用completer控制future结束 结束前下一个future不会执行
     Completer completer = Completer<void>();
     try {
-      String html = await HttpUtil.getString(url);
+      String html = await HttpUtil.getString(
+        url,
+        headers: {
+          "User-Agent": userAgent,
+          "Accept-Language": "zh-CN,zh;q=0.9"
+        },
+      );
       if (!html.contains("error code")) {
         return html;
       }
