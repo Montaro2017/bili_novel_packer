@@ -9,7 +9,7 @@ import 'package:bili_novel_packer/util/http_util.dart';
 import 'package:html/dom.dart';
 import 'package:html/parser.dart';
 
-class BiliLightNovelSource implements LightNovelSource {
+class BiliNovelSource implements LightNovelSource {
   static final RegExp _exp =
       RegExp("(?:linovelib|bilinovel)\\.com/novel/(\\d+)");
   static final String domain = "https://www.bilinovel.com";
@@ -25,9 +25,9 @@ class BiliLightNovelSource implements LightNovelSource {
   @override
   final String sourceUrl = "https://www.bilinovel.com";
 
-  static void setSecretMap(Map<String, String> map) {
-    secretMap.clear();
-    secretMap.addAll(map);
+  static Future<void> init() async {
+    BiliNovelSource.secretMap.clear();
+    BiliNovelSource.secretMap.addAll(await BiliNovelHelper.getSecretMap());
   }
 
   /// 获取小说基本信息
@@ -111,9 +111,6 @@ class BiliLightNovelSource implements LightNovelSource {
 
   @override
   Future<Document> getNovelChapter(Chapter chapter) async {
-    if (secretMap.isEmpty) {
-      initSecretMap();
-    }
     Document doc = Document.html(LightNovelSource.html);
 
     chapter.chapterUrl ??= await _getChapterUrl(chapter);
@@ -290,10 +287,7 @@ class BiliLightNovelSource implements LightNovelSource {
     try {
       String html = await HttpUtil.getString(
         url,
-        headers: {
-          "User-Agent": userAgent,
-          "Accept-Language": "zh-CN,zh;q=0.9"
-        },
+        headers: {"User-Agent": userAgent, "Accept-Language": "zh-CN,zh;q=0.9"},
       );
       if (!html.contains("error code")) {
         return html;
