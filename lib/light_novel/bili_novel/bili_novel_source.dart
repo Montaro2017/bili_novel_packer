@@ -75,30 +75,32 @@ class BiliNovelSource implements LightNovelSource {
       volume = Volume("", catalog);
     }
     for (var child in children) {
-      if (child.classes.contains("chapter-bar")) {
-        if (volume != null) {
-          catalog.volumes.add(volume);
-        }
-        volume = Volume(child.text, catalog);
-      } else if (child.classes.contains("volume-cover")) {
-        // 获取目录上的分卷封面
-        String? cover =
-            child.querySelector("a")?.querySelector("img")?.attributes["src"];
-        if (volume != null) {
-          volume.cover = cover;
-        }
-      } else if (child.classes.contains("jsChapter")) {
-        var link = child.querySelector("a")!;
-        String name = link.text;
-        String? href = link.attributes["href"];
-        if (href == null || href.contains("javascript")) {
-          href = null;
-        } else {
-          href = "$domain$href";
-        }
-        if (volume != null) {
-          var chapter = Chapter(name, href, volume);
-          volume.chapters.add(chapter);
+      if (!child.classes.contains("catalog-volume")) {
+        continue;
+      }
+      var lis = child.querySelectorAll(".volume-chapters>li");
+      for (var li in lis) {
+        if (li.classes.contains("chapter-bar")) {
+          if (volume != null) {
+            catalog.volumes.add(volume);
+          }
+          volume = Volume(li.text, catalog);
+        } else if (li.classes.contains("volume-cover")) {
+          volume?.cover =
+              child.querySelector("a")?.querySelector("img")?.attributes["src"];
+        } else if (li.classes.contains("jsChapter")) {
+          var link = li.querySelector("a")!;
+          String name = link.text;
+          String? href = link.attributes["href"];
+          if (href == null || href.contains("javascript")) {
+            href = null;
+          } else {
+            href = "$domain$href";
+          }
+          if (volume != null) {
+            var chapter = Chapter(name, href, volume);
+            volume.chapters.add(chapter);
+          }
         }
       }
     }
