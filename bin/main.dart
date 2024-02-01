@@ -48,6 +48,7 @@ String readUrl() {
     print("请输入URL(支持哔哩轻小说&轻小说文库):");
     url = stdin.readLineSync();
   } while (url == null || url.isEmpty);
+  url = url.split(" ")[0];
   return url;
 }
 

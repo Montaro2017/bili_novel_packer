@@ -69,7 +69,6 @@ class NovelPacker {
     if (lightNovelSource is BiliNovelSource) {
       await BiliNovelSource.init();
     }
-    print("then");
     if (!arg.combineVolume) {
       for (var volume in arg.packVolumes) {
         _imageSequence.reset();
