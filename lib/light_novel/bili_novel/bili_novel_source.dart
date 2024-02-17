@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:bili_novel_packer/light_novel/base/light_novel_model.dart';
@@ -304,6 +305,10 @@ class BiliNovelSource implements LightNovelSource {
 
   @override
   Future<Uint8List> getImage(String src) {
+    if (src.startsWith("data:image")) {
+      src = src.split(",")[1];
+      return Future.value(base64.decode(src));
+    }
     if (!src.startsWith("http")) {
       src = "$domain/$src";
     }
