@@ -123,7 +123,8 @@ class BiliNovelSource implements LightNovelSource {
     String? nextPageUrl = chapter.chapterUrl!;
     do {
       ChapterPage page = await _getChapterPage(nextPageUrl!);
-      if (page.title != null && page.title != chapter.chapterName) {
+      // 处理目录标题与章节中获取的标题不一致情况
+      if (page.title != null && page.title != chapter.chapterName && !page.title!.contains("〇")) {
         chapter.chapterName = page.title!;
       }
       for (var content in page.contents) {
