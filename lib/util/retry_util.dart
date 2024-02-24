@@ -4,6 +4,7 @@ typedef Predicate<T> = bool Function(T data);
 
 Future<T> retryByResult<T>(
   FutureOr<T> Function() fn, {
+  int maxRetries = 10,
   Predicate<T>? predicate,
   Duration? delay,
   Function? onRetry,
@@ -11,14 +12,19 @@ Future<T> retryByResult<T>(
 }) async {
   bool shouldRetry = false;
   T result;
+  int retryCount = 0;
   do {
-    if (shouldRetry && onRetry != null) {
-      onRetry.call();
+    if (shouldRetry) {
+      if (delay != null) {
+        await Future.delayed(delay);
+      }
+      onRetry?.call();
+      retryCount++;
     }
     result = await fn.call();
     shouldRetry = predicate != null && predicate.call(result);
-    if (shouldRetry && delay != null) {
-      await Future.delayed(delay);
+    if(shouldRetry && retryCount >= maxRetries) {
+      throw "Retry failed: $retryCount attempts made.";
     }
   } while (shouldRetry);
   onFinish?.call();

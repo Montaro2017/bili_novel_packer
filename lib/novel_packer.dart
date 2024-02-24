@@ -149,6 +149,10 @@ class NovelPacker {
     for (int i = 0; i < imageDataList.length; i++) {
       Element imageElement = imgList[i];
       Uint8List data = imageDataList[i];
+      // 跳过错误的图片
+      if (data.isEmpty) {
+        continue;
+      }
 
       String name = "${_imageSequence.next.toString().padLeft(6, '0')}.jpg";
       String relativeSrc = "images/$name";
@@ -172,7 +176,12 @@ class NovelPacker {
   Future<List<Uint8List>> _getImages(List<String?> srcList) async {
     List<Future<Uint8List>> futures = [];
     for (var src in srcList) {
-      futures.add(_getSingleImage(src));
+      futures.add(_getSingleImage(src).catchError(
+        (e) {
+          print("下载图片失败: $src");
+          return Uint8List(0);
+        },
+      ));
     }
     return Future.wait(futures);
   }
