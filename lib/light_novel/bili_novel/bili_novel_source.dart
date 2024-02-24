@@ -7,6 +7,7 @@ import 'package:bili_novel_packer/light_novel/base/light_novel_source.dart';
 import 'package:bili_novel_packer/light_novel/bili_novel/bili_novel_secret.dart';
 import 'package:bili_novel_packer/util/html_util.dart';
 import 'package:bili_novel_packer/util/http_util.dart';
+import 'package:bili_novel_packer/util/retry_util.dart';
 import 'package:html/dom.dart';
 import 'package:html/parser.dart';
 
@@ -124,7 +125,9 @@ class BiliNovelSource implements LightNovelSource {
     do {
       ChapterPage page = await _getChapterPage(nextPageUrl!);
       // 处理目录标题与章节中获取的标题不一致情况
-      if (page.title != null && page.title != chapter.chapterName && !page.title!.contains("〇")) {
+      if (page.title != null &&
+          page.title != chapter.chapterName &&
+          !page.title!.contains("〇")) {
         chapter.chapterName = page.title!;
       }
       for (var content in page.contents) {
@@ -201,7 +204,7 @@ class BiliNovelSource implements LightNovelSource {
 
   /// 获取章节一页内容
   Future<ChapterPage> _getChapterPage(String url) async {
-    var doc = parse(await httpGet(url));
+    var doc = parse(await _httpGetString(url));
 
     String? title;
     if (!url.contains("_")) {
@@ -284,28 +287,51 @@ class BiliNovelSource implements LightNovelSource {
     }
   }
 
-  /// 如果error code 则全部等待10秒再获取数据
-  Future<String> httpGet(String url) async {
-    // 用completer控制future结束 结束前下一个future不会执行
+  Future<String> _httpGetString(String url) {
     Completer completer = Completer<void>();
-    try {
-      String html = await HttpUtil.getString(
+    return retryByResult(
+      () => HttpUtil.getString(
         url,
-        headers: {"User-Agent": userAgent, "Accept-Language": "zh-CN,zh;q=0.9"},
-      );
-      if (!html.contains("error code")) {
-        return html;
-      }
-      await Future.delayed(Duration(seconds: 10));
-      html = await httpGet(url);
-      return html;
-    } finally {
-      completer.complete();
-    }
+        headers: {
+          "User-Agent": userAgent,
+          "Accept-Language": "zh-CN,zh;q=0.9",
+        },
+      ),
+      predicate: (result) {
+        return result.contains("error code");
+      },
+      delay: Duration(seconds: 10),
+      onFinish: () {
+        completer.complete();
+      },
+    );
+  }
+
+  Future<Uint8List> _httpGetImage(String url) {
+    Completer completer = Completer<void>();
+    return retryByResult(
+      () => HttpUtil.getBytes(
+        url,
+        headers: {
+          "referer": domain,
+        },
+      ),
+      predicate: (result) {
+        // 403 Forbidden
+        return String.fromCharCodes(result).contains("403");
+      },
+      delay: Duration(seconds: 1),
+      onRetry: () {
+        // print("$url 403");
+      },
+      onFinish: () {
+        completer.complete();
+      },
+    );
   }
 
   @override
-  Future<Uint8List> getImage(String src) {
+  Future<Uint8List> getImage(String src) async {
     if (src.startsWith("data:image")) {
       src = src.split(",")[1];
       return Future.value(base64.decode(src));
@@ -315,9 +341,8 @@ class BiliNovelSource implements LightNovelSource {
     }
     // 处理图片url域名特殊字符 𝘣 = \ud835\ude23
     src = src.replaceAll("\ud835\ude23", "b");
-    return HttpUtil.getBytes(src, headers: {
-      "referer": domain,
-    });
+    var ret = _httpGetImage(src);
+    return ret;
   }
 }
 
