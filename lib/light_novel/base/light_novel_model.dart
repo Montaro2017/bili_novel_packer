@@ -73,6 +73,16 @@ class Volume {
     }
     return volumeName;
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Volume &&
+          runtimeType == other.runtimeType &&
+          volumeName == other.volumeName;
+
+  @override
+  int get hashCode => volumeName.hashCode;
 }
 
 class Chapter {
@@ -91,7 +101,8 @@ class Chapter {
   Chapter(this.chapterName, this.chapterUrl, this.volume);
 
   @override
-  int get hashCode => [chapterName, chapterUrl].toString().hashCode;
+  int get hashCode =>
+      [chapterName, chapterUrl, volume.hashCode].toString().hashCode;
 
   @override
   bool operator ==(Object other) {
