@@ -15,7 +15,7 @@ void main(List<String> args) async {
   } catch (e, stackTrace) {
     print(e);
     print(stackTrace);
-    print("运行出错，按回车键退出.");
+    print("运行出错，按回车键退出.($version)");
     Console.readLine();
   }
 }
@@ -65,12 +65,12 @@ PackArgument readPackArgument(Catalog catalog) {
   if (arg.packVolumes.length > 1) {
     Console.write("\n");
     arg.combineVolume =
-        Chooser(["是", "否"], message: "是否合并选择的分卷为一个文件？").chooseSync() == "是";
+        Chooser(["是", "否"], message: "是否合并选择的分卷为一个文件? ").chooseSync() == "是";
   }
 
   Console.write("\n");
   arg.addChapterTitle =
-      Chooser(["是", "否"], message: "是否在每章开头添加章节标题?").chooseSync() == "是";
+      Chooser(["是", "否"], message: "是否在每章开头添加章节标题? ").chooseSync() == "是";
   Console.write("\n");
   return arg;
 }

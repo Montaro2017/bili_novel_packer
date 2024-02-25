@@ -246,7 +246,9 @@ class NovelPacker {
   ) async {
     // 优先使用目录中的封面 否则自动检测
     if (volume.cover != null) {
-      Uint8List coverData = await _getSingleImage(volume.cover);
+      Uint8List coverData = await _getSingleImage(volume.cover).catchError((e) {
+        throw "下载封面失败 ${volume.cover}\n$e";
+      });
       String coverName =
           "images/${_imageSequence.next.toString().padLeft(6, '0')}.jpg";
       packer.addImage(name: "OEBPS/$coverName", data: coverData);
