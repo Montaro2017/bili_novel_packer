@@ -93,6 +93,9 @@ List<Volume> readSelectVolume(Catalog catalog) {
     }
     return selectVolumeIndex;
   }
+  input = input.trim();
+  input = input.replaceAll("，", ",");
+  input = input.replaceAll(" ", ",");
   List<String> parts = input.split(",");
   for (var part in parts) {
     List<String> range = part.split("-");
