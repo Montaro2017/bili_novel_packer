@@ -316,11 +316,12 @@ class BiliNovelSource implements LightNovelSource {
           "referer": domain,
         },
       ),
+      maxRetries: 30,
       predicate: (result) {
         // 403 Forbidden
         return String.fromCharCodes(result).contains("403");
       },
-      delay: Duration(seconds: 1),
+      delay: Duration(seconds: 3),
       onRetry: () {
         // print("$url 403");
       },
