@@ -87,7 +87,7 @@ List<Volume> readSelectVolume(Catalog catalog) {
   var input = Console.readLine();
   List<Volume> selectVolumeIndex = [];
 
-  if (input == null || input == "0") {
+  if (input == null || input == "0" || input == "") {
     for (int i = 0; i < catalog.volumes.length; i++) {
       selectVolumeIndex.add(catalog.volumes[i]);
     }
