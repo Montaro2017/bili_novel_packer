@@ -316,7 +316,7 @@ class BiliNovelSource implements LightNovelSource {
           "referer": domain,
         },
       ),
-      maxRetries: 30,
+      maxRetries: 3,
       predicate: (result) {
         // 403 Forbidden
         return String.fromCharCodes(result).contains("403");
