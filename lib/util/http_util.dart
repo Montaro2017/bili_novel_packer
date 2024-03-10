@@ -44,7 +44,9 @@ class HttpUtil {
   }) async {
     return _retry(
       () => http.get(Uri.parse(url), headers: headers).timeout(timeout),
-    ).then((response) => response.body);
+    ).then((response) {
+      return response.body;
+    });
   }
 
   static Future<String> getStringFromGbk(
