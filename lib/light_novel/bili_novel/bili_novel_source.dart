@@ -304,7 +304,7 @@ class BiliNovelSource implements LightNovelSource {
         },
       ),
       predicate: (result) {
-        return result.contains("error code") || result.contains("Cloudflare");
+        return result.contains("error code") || result.contains("Cloudflare to restrict access");
       },
       delay: Duration(seconds: 10),
       onFinish: () {
