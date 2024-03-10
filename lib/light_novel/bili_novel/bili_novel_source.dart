@@ -21,6 +21,8 @@ class BiliNovelSource implements LightNovelSource {
   static final String userAgent =
       "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1";
 
+  static final String cookie = "night=1";
+
   @override
   final String name = "哔哩轻小说";
 
@@ -204,7 +206,8 @@ class BiliNovelSource implements LightNovelSource {
 
   /// 获取章节一页内容
   Future<ChapterPage> _getChapterPage(String url) async {
-    var doc = parse(await _httpGetString(url));
+    String html = await _httpGetString(url);
+    var doc = parse(html);
 
     String? title;
     if (!url.contains("_")) {
@@ -294,11 +297,14 @@ class BiliNovelSource implements LightNovelSource {
         url,
         headers: {
           "User-Agent": userAgent,
+          "Accept": "*/*",
           "Accept-Language": "zh-CN,zh;q=0.9",
+          "Accept-Encoding": "gzip, deflate, br",
+          "Cookie": cookie
         },
       ),
       predicate: (result) {
-        return result.contains("error code");
+        return result.contains("error code") || result.contains("Cloudflare");
       },
       delay: Duration(seconds: 10),
       onFinish: () {
