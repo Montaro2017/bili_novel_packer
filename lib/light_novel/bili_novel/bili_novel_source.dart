@@ -299,7 +299,6 @@ class BiliNovelSource implements LightNovelSource {
           "User-Agent": userAgent,
           "Accept": "*/*",
           "Accept-Language": "zh-CN,zh;q=0.9",
-          "Accept-Encoding": "gzip, deflate, br",
           "Cookie": cookie
         },
       ),
@@ -322,12 +321,12 @@ class BiliNovelSource implements LightNovelSource {
           "referer": domain,
         },
       ),
-      maxRetries: 3,
+      maxRetries: 5,
       predicate: (result) {
         // 403 Forbidden
         return String.fromCharCodes(result).contains("403");
       },
-      delay: Duration(seconds: 3),
+      delay: Duration(seconds: 5),
       onRetry: () {
         // print("$url 403");
       },
