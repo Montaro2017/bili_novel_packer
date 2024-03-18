@@ -22,14 +22,6 @@
 ### 目前支持的轻小说网站
  - [哔哩轻小说](https://www.linovelib.com)
  - [轻小说文库](https://www.wenku8.net/login.php)
- - 如果你希望添加其他网站支持，请提Issue
-
-## 交流群
-群号：891260100
-
-[点击加群](http://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=W_B3NYdylkGTyxR25LYz1ocalRta_6GC&authKey=qlnRDbysCGmeTmdnWnfFkBd9De7LAvMbHP3VvSoAFrNx1tW7D0gMLE0U%2FH%2FJBw9s&noverify=0&group_code=891260100)
-
-![qun](./images/qun.png)
 
 ## 下载
 
