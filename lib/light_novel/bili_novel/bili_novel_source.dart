@@ -19,9 +19,9 @@ class BiliNovelSource implements LightNovelSource {
   static final Map<String, String> secretMap = {};
 
   static final String userAgent =
-      "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1";
+      "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
 
-  static final String cookie = "night=1";
+  static final String cookie = "night=0";
 
   @override
   final String name = "哔哩轻小说";
@@ -244,6 +244,7 @@ class BiliNovelSource implements LightNovelSource {
     }
 
     HTMLUtil.removeElements(content.querySelectorAll("div"));
+    HTMLUtil.removeElements(content.querySelectorAll("figure"));
     HTMLUtil.removeElements(content.querySelectorAll("br"));
     HTMLUtil.removeElements(content.querySelectorAll("script"));
     HTMLUtil.removeElements(content.querySelectorAll(".tp"));

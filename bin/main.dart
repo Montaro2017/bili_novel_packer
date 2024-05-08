@@ -80,6 +80,7 @@ List<Volume> readSelectVolume(Catalog catalog) {
   for (int i = 0; i < catalog.volumes.length; i++) {
     Console.write("[${i + 1}] ${catalog.volumes[i].volumeName}\n");
   }
+  Console.write("---------------\n");
   Console.write("[0] 选择全部\n");
   Console.write(
     "请选择需要下载的分卷(可输入如1-9进行范围选择以及如2,5单独选择):",
