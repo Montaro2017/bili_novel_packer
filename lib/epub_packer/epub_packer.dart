@@ -59,7 +59,8 @@ class EpubPacker {
 
   String? get description => _opf.metaData.description;
 
-  set description(String? description) => _opf.metaData.description = description;
+  set description(String? description) =>
+      _opf.metaData.description = description;
 
   String? get cover => _opf.cover;
 
@@ -164,8 +165,8 @@ class EpubPacker {
         opfUint8List,
       ),
     );
-    addArchiveFile(container);
-    addArchiveFile(mimetype);
+    addArchiveFile(getContainer());
+    addArchiveFile(getMimeType());
     final ZipFileEncoder zip = ZipFileEncoder();
     zip.create(epubFilePath);
     for (var archiveFile in archiveFiles) {
