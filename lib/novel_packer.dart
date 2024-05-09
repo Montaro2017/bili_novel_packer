@@ -53,12 +53,12 @@ class NovelPacker {
   }
 
   Future<Novel> getNovel() async {
-    return lightNovelSource.getNovel(url).then((novel) => this.novel = novel);
+    return lightNovelSource.getNovel(url)().then((novel) => this.novel = novel);
   }
 
   Future<Catalog> getCatalog() async {
     return lightNovelSource
-        .getNovelCatalog(novel)
+        .getNovelCatalog(novel)()
         .then((catalog) => this.catalog = catalog);
   }
 
@@ -140,7 +140,7 @@ class NovelPacker {
     bool addChapterTitle, [
     LightNovelCoverDetector? detector,
   ]) async {
-    Document doc = await lightNovelSource.getNovelChapter(chapter);
+    Document doc = await lightNovelSource.getNovelChapter(chapter)();
 
     // 下载图片 添加到epub中
     List<Element> imgList = doc.querySelectorAll("img");
@@ -187,14 +187,10 @@ class NovelPacker {
   }
 
   Future<Uint8List> _getSingleImage(String? src) async {
-    try {
-      if (src == null) {
-        return Uint8List(0);
-      }
-      return lightNovelSource.getImage(src);
-    } catch (e) {
+    if (src == null) {
       return Uint8List(0);
     }
+    return lightNovelSource.getImage(src)();
   }
 
   Future<void> _packVolume(

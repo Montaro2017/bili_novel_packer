@@ -27,105 +27,111 @@ class WenkuNovelSource implements LightNovelSource {
   static final Lock lock = Lock();
 
   @override
-  Future<Novel> getNovel(String url) async {
-    String id = _getId(url);
-    WenkuNovel novel = WenkuNovel();
-    var doc = parse(
-      await HttpUtil.getStringFromGbk(
-        "$domain/book/$id.htm",
-        headers: {
-          "User-Agent": userAgent,
-        },
-      ),
-    );
+  FutureFunction<Novel> getNovel(String url) {
+    return () async {
+      String id = _getId(url);
+      WenkuNovel novel = WenkuNovel();
+      var doc = parse(
+        await HttpUtil.getStringFromGbk(
+          "$domain/book/$id.htm",
+          headers: {
+            "User-Agent": userAgent,
+          },
+        ),
+      );
 
-    novel.id = id.toString();
-    novel.title = doc
-        .querySelector("#content")!
-        .querySelector("table:nth-child(1)")!
-        .querySelector("span b")!
-        .text;
-    novel.coverUrl =
-        doc.querySelector("#content table img")!.attributes["src"]!;
-    List<Element> details = doc
-        .querySelector("#content table:nth-child(1)")!
-        .querySelector("tr:nth-child(2)")!
-        .querySelectorAll("td");
-    novel.status = details[2].text.replaceFirst("文章状态：", "");
-    novel.author = details[1].text.replaceFirst("小说作者：", "");
+      novel.id = id.toString();
+      novel.title = doc
+          .querySelector("#content")!
+          .querySelector("table:nth-child(1)")!
+          .querySelector("span b")!
+          .text;
+      novel.coverUrl =
+          doc.querySelector("#content table img")!.attributes["src"]!;
+      List<Element> details = doc
+          .querySelector("#content table:nth-child(1)")!
+          .querySelector("tr:nth-child(2)")!
+          .querySelectorAll("td");
+      novel.status = details[2].text.replaceFirst("文章状态：", "");
+      novel.author = details[1].text.replaceFirst("小说作者：", "");
 
-    Element td =
-        doc.querySelectorAll("#content table")[2].querySelectorAll("td")[1];
+      Element td =
+          doc.querySelectorAll("#content table")[2].querySelectorAll("td")[1];
 
-    novel.tags =
-        td.querySelector("span")!.text.replaceFirst("作品Tags：", "").split(" ");
-    novel.description = td.querySelectorAll("span")[5].text;
+      novel.tags =
+          td.querySelector("span")!.text.replaceFirst("作品Tags：", "").split(" ");
+      novel.description = td.querySelectorAll("span")[5].text;
 
-    novel.catalogUrl =
-        doc.querySelector("legend + div > a")!.attributes["href"]!;
-    if (!novel.catalogUrl.startsWith("http")) {
-      novel.catalogUrl = domain +
-          (novel.catalogUrl.startsWith("/") ? "" : "/") +
-          novel.catalogUrl;
-    }
-    return novel;
+      novel.catalogUrl =
+          doc.querySelector("legend + div > a")!.attributes["href"]!;
+      if (!novel.catalogUrl.startsWith("http")) {
+        novel.catalogUrl = domain +
+            (novel.catalogUrl.startsWith("/") ? "" : "/") +
+            novel.catalogUrl;
+      }
+      return novel;
+    };
   }
 
   @override
-  Future<Catalog> getNovelCatalog(Novel novel) async {
-    String url = (novel as WenkuNovel).catalogUrl;
-    String prefix = URLUtil.resolve(url, "./");
-    var doc = parse(
-      await HttpUtil.getStringFromGbk(
-        url,
-        headers: {
-          "User-Agent": userAgent,
-        },
-      ),
-    );
-    var tdList = doc.querySelectorAll("table td");
-    var catalog = Catalog(novel);
-    Volume? volume;
-    for (var td in tdList) {
-      var styleClass = td.attributes["class"];
-      if (styleClass == "vcss") {
-        if (volume != null) {
-          catalog.volumes.add(volume);
-        }
-        volume = Volume(td.text, catalog);
-      } else if (styleClass == "ccss") {
-        var link = td.querySelector("a");
-        if (link == null) continue;
-        var href = link.attributes["href"];
-        if (volume == null) continue;
-        var chapter = Chapter(
-          link.text,
-          "$prefix/$href",
-          volume,
-        );
-        // 将插图移动至最前面
-        if (chapter.chapterName == "插图") {
-          volume.chapters.insert(0, chapter);
-        } else {
-          volume.chapters.add(chapter);
+  FutureFunction<Catalog> getNovelCatalog(Novel novel) {
+    return () async {
+      String url = (novel as WenkuNovel).catalogUrl;
+      String prefix = URLUtil.resolve(url, "./");
+      var doc = parse(
+        await HttpUtil.getStringFromGbk(
+          url,
+          headers: {
+            "User-Agent": userAgent,
+          },
+        ),
+      );
+      var tdList = doc.querySelectorAll("table td");
+      var catalog = Catalog(novel);
+      Volume? volume;
+      for (var td in tdList) {
+        var styleClass = td.attributes["class"];
+        if (styleClass == "vcss") {
+          if (volume != null) {
+            catalog.volumes.add(volume);
+          }
+          volume = Volume(td.text, catalog);
+        } else if (styleClass == "ccss") {
+          var link = td.querySelector("a");
+          if (link == null) continue;
+          var href = link.attributes["href"];
+          if (volume == null) continue;
+          var chapter = Chapter(
+            link.text,
+            "$prefix/$href",
+            volume,
+          );
+          // 将插图移动至最前面
+          if (chapter.chapterName == "插图") {
+            volume.chapters.insert(0, chapter);
+          } else {
+            volume.chapters.add(chapter);
+          }
         }
       }
-    }
-    if (volume != null) {
-      catalog.volumes.add(volume);
-    }
-    return catalog;
+      if (volume != null) {
+        catalog.volumes.add(volume);
+      }
+      return catalog;
+    };
   }
 
   @override
-  Future<Document> getNovelChapter(Chapter chapter) async {
-    return retry(
-      maxAttempts: 10,
-      retryIf: (e) => true,
-      delayFactor: Duration(milliseconds: 300),
-      maxDelay: Duration(seconds: 3),
-      () => _getNovelChapter(chapter),
-    );
+  FutureFunction<Document> getNovelChapter(Chapter chapter) {
+    return () async {
+      return retry(
+        maxAttempts: 10,
+        retryIf: (e) => true,
+        delayFactor: Duration(milliseconds: 300),
+        maxDelay: Duration(seconds: 3),
+        () => _getNovelChapter(chapter),
+      );
+    };
   }
 
   Future<Document> _getNovelChapter(Chapter chapter) async {
@@ -141,7 +147,8 @@ class WenkuNovelSource implements LightNovelSource {
         },
       ));
       var content = doc.querySelector("#content");
-      if (content == null && doc.outerHtml.contains("Cloudflare")) throw Exception("Cloudflare Error");
+      if (content == null && doc.outerHtml.contains("Cloudflare"))
+        throw Exception("Cloudflare Error");
       HTMLUtil.removeElements(content!.querySelectorAll("#contentdp"));
       HTMLUtil.removeElements(content.querySelectorAll("br"));
       return _wrapDocument(content);
@@ -186,12 +193,14 @@ class WenkuNovelSource implements LightNovelSource {
   }
 
   @override
-  Future<Uint8List> getImage(String src) {
-    return HttpUtil.getBytes(
-      src,
-      headers: {
-        "User-Agent": userAgent,
-      },
-    );
+  FutureFunction<Uint8List> getImage(String src) {
+    return () async {
+      return HttpUtil.getBytes(
+        src,
+        headers: {
+          "User-Agent": userAgent,
+        },
+      );
+    };
   }
 }

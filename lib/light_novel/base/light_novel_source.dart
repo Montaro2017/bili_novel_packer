@@ -3,7 +3,10 @@ import 'dart:typed_data';
 import 'package:bili_novel_packer/light_novel/base/light_novel_model.dart';
 import 'package:html/dom.dart';
 
+typedef FutureFunction<T> = Future<T> Function();
+
 abstract class LightNovelSource {
+
   static const String html = "<html lang='zh-CN'><body></body></html>";
 
   String get name;
@@ -12,11 +15,11 @@ abstract class LightNovelSource {
 
   bool supportUrl(String url);
 
-  Future<Novel> getNovel(String url);
+  FutureFunction<Novel> getNovel(String url);
 
-  Future<Catalog> getNovelCatalog(Novel novel);
+  FutureFunction<Catalog> getNovelCatalog(Novel novel);
 
-  Future<Document> getNovelChapter(Chapter chapter);
+  FutureFunction<Document> getNovelChapter(Chapter chapter);
 
-  Future<Uint8List> getImage(String src);
+  FutureFunction<Uint8List> getImage(String src);
 }
