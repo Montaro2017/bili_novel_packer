@@ -1,9 +1,8 @@
 import 'dart:typed_data';
 
 import 'package:bili_novel_packer/light_novel/base/light_novel_model.dart';
+import 'package:bili_novel_packer/scheduler/scheduler.dart';
 import 'package:html/dom.dart';
-
-typedef FutureFunction<T> = Future<T> Function();
 
 abstract class LightNovelSource {
 
@@ -13,13 +12,20 @@ abstract class LightNovelSource {
 
   String get sourceUrl;
 
+  Scheduler getScheduler();
+
   bool supportUrl(String url);
 
-  FutureFunction<Novel> getNovel(String url);
+  Future<Novel> getNovel(String url);
 
-  FutureFunction<Catalog> getNovelCatalog(Novel novel);
+  Future<Catalog> getNovelCatalog(Novel novel);
 
   FutureFunction<Document> getNovelChapter(Chapter chapter);
 
   FutureFunction<Uint8List> getImage(String src);
+}
+
+enum SchedulerKey {
+  document,
+  image,
 }

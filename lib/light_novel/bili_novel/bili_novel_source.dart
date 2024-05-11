@@ -5,6 +5,8 @@ import 'dart:typed_data';
 import 'package:bili_novel_packer/light_novel/base/light_novel_model.dart';
 import 'package:bili_novel_packer/light_novel/base/light_novel_source.dart';
 import 'package:bili_novel_packer/light_novel/bili_novel/bili_novel_secret.dart';
+import 'package:bili_novel_packer/scheduler/executor.dart';
+import 'package:bili_novel_packer/scheduler/scheduler.dart';
 import 'package:bili_novel_packer/util/html_util.dart';
 import 'package:bili_novel_packer/util/http_util.dart';
 import 'package:bili_novel_packer/util/retry_util.dart';
@@ -36,31 +38,25 @@ class BiliNovelSource implements LightNovelSource {
 
   /// 获取小说基本信息
   @override
-  FutureFunction<Novel> getNovel(String url) {
-    return () async {
-      String id = _getId(url);
-      Novel novel = Novel();
-      var doc = parse(await HttpUtil.getString("$domain/novel/$id.html"));
+  Future<Novel> getNovel(String url) async {
+    String id = _getId(url);
+    Novel novel = Novel();
+    var doc = parse(await HttpUtil.getString("$domain/novel/$id.html"));
 
-      novel.id = id.toString();
-      novel.url = url;
-      novel.title = doc.querySelector(".book-title")!.text;
-      novel.coverUrl =
-          doc.querySelector(".book-layout img")!.attributes["src"]!;
-      novel.tags = doc
-          .querySelectorAll(".book-cell .book-meta span em")
-          .map((e) => e.text)
-          .toList();
-      novel.publisher = doc.querySelector(".tag-small.orange")?.text;
-      novel.status = doc
-          .querySelector(".book-cell .book-meta+.book-meta")!
-          .nodes
-          .last
-          .text!;
-      novel.author = doc.querySelector(".book-rand-a span")!.text;
-      novel.description = doc.querySelector("#bookSummary content")!.text;
-      return novel;
-    };
+    novel.id = id.toString();
+    novel.url = url;
+    novel.title = doc.querySelector(".book-title")!.text;
+    novel.coverUrl = doc.querySelector(".book-layout img")!.attributes["src"]!;
+    novel.tags = doc
+        .querySelectorAll(".book-cell .book-meta span em")
+        .map((e) => e.text)
+        .toList();
+    novel.publisher = doc.querySelector(".tag-small.orange")?.text;
+    novel.status =
+        doc.querySelector(".book-cell .book-meta+.book-meta")!.nodes.last.text!;
+    novel.author = doc.querySelector(".book-rand-a span")!.text;
+    novel.description = doc.querySelector("#bookSummary content")!.text;
+    return novel;
   }
 
   String _getId(String url) {
@@ -73,56 +69,52 @@ class BiliNovelSource implements LightNovelSource {
 
   /// 获取小说目录
   @override
-  FutureFunction<Catalog> getNovelCatalog(Novel novel) {
-    return () async {
-      var doc =
-          parse(await HttpUtil.getString("$domain/novel/${novel.id}/catalog"));
-      var catalog = Catalog(novel);
-      _replaceImageSrc(doc.body!);
-      var children = doc.querySelector("#volumes")!.children;
-      Volume? volume;
-      // 如果没有卷标题 则将书名直接作为卷名
-      if (doc.querySelector(".chapter-bar") == null) {
-        volume = Volume("", catalog);
+  Future<Catalog> getNovelCatalog(Novel novel) async {
+    var doc =
+        parse(await HttpUtil.getString("$domain/novel/${novel.id}/catalog"));
+    var catalog = Catalog(novel);
+    _replaceImageSrc(doc.body!);
+    var children = doc.querySelector("#volumes")!.children;
+    Volume? volume;
+    // 如果没有卷标题 则将书名直接作为卷名
+    if (doc.querySelector(".chapter-bar") == null) {
+      volume = Volume("", catalog);
+    }
+    for (var child in children) {
+      if (!child.classes.contains("catalog-volume")) {
+        continue;
       }
-      for (var child in children) {
-        if (!child.classes.contains("catalog-volume")) {
-          continue;
-        }
-        var lis = child.querySelectorAll(".volume-chapters>li");
-        for (var li in lis) {
-          if (li.classes.contains("chapter-bar")) {
-            if (volume != null) {
-              catalog.volumes.add(volume);
-            }
-            volume = Volume(li.text, catalog);
-          } else if (li.classes.contains("volume-cover")) {
-            volume?.cover = child
-                .querySelector("a")
-                ?.querySelector("img")
-                ?.attributes["src"];
-          } else if (li.classes.contains("jsChapter")) {
-            var link = li.querySelector("a")!;
-            String name = link.text;
-            String? href = link.attributes["href"];
-            if (href == null || href.contains("javascript")) {
-              href = null;
-            } else {
-              href = "$domain$href";
-            }
-            if (volume != null) {
-              var chapter = Chapter(name, href, volume);
-              volume.chapters.add(chapter);
-            }
+      var lis = child.querySelectorAll(".volume-chapters>li");
+      for (var li in lis) {
+        if (li.classes.contains("chapter-bar")) {
+          if (volume != null) {
+            catalog.volumes.add(volume);
+          }
+          volume = Volume(li.text, catalog);
+        } else if (li.classes.contains("volume-cover")) {
+          volume?.cover =
+              child.querySelector("a")?.querySelector("img")?.attributes["src"];
+        } else if (li.classes.contains("jsChapter")) {
+          var link = li.querySelector("a")!;
+          String name = link.text;
+          String? href = link.attributes["href"];
+          if (href == null || href.contains("javascript")) {
+            href = null;
+          } else {
+            href = "$domain$href";
+          }
+          if (volume != null) {
+            var chapter = Chapter(name, href, volume);
+            volume.chapters.add(chapter);
           }
         }
       }
+    }
 
-      if (volume != null) {
-        catalog.volumes.add(volume);
-      }
-      return catalog;
-    };
+    if (volume != null) {
+      catalog.volumes.add(volume);
+    }
+    return catalog;
   }
 
   @override
@@ -365,6 +357,11 @@ class BiliNovelSource implements LightNovelSource {
       return ret;
     };
   }
+
+  @override
+  Scheduler getScheduler() {
+    return _BiliNovelScheduler();
+  }
 }
 
 class ChapterPage {
@@ -383,4 +380,18 @@ class ChapterPage {
     this.prevChapterUrl,
     this.nextChapterUrl,
   });
+}
+
+class _BiliNovelScheduler implements Scheduler {
+  @override
+  Future<List<T>> execute<T>(
+    List<FutureFunction<T>> tasks, {
+    Object? key = SchedulerKey.document,
+  }) {
+    return Executor.parallel(
+      tasks,
+      batchSize: 5,
+      delay: Duration(seconds: 10),
+    );
+  }
 }

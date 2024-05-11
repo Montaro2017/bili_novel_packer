@@ -10,6 +10,7 @@ import 'package:bili_novel_packer/light_novel/base/light_novel_source.dart';
 import 'package:bili_novel_packer/light_novel/bili_novel/bili_novel_source.dart';
 import 'package:bili_novel_packer/light_novel/wenku_novel/wenku_novel_source.dart';
 import 'package:bili_novel_packer/pack_argument.dart';
+import 'package:bili_novel_packer/scheduler/scheduler.dart';
 import 'package:bili_novel_packer/util/html_util.dart';
 import 'package:bili_novel_packer/util/sequence.dart';
 import 'package:console/console.dart';
@@ -29,8 +30,12 @@ class NovelPacker {
 
   late Novel novel;
   late Catalog catalog;
+  late Scheduler scheduler;
 
-  NovelPacker._(this.lightNovelSource, this.url);
+  NovelPacker._(
+    this.lightNovelSource,
+    this.url,
+  ) : scheduler = lightNovelSource.getScheduler();
 
   factory NovelPacker.fromUrl(String url) {
     for (var source in sources) {
@@ -53,12 +58,12 @@ class NovelPacker {
   }
 
   Future<Novel> getNovel() async {
-    return lightNovelSource.getNovel(url)().then((novel) => this.novel = novel);
+    return lightNovelSource.getNovel(url).then((novel) => this.novel = novel);
   }
 
   Future<Catalog> getCatalog() async {
     return lightNovelSource
-        .getNovelCatalog(novel)()
+        .getNovelCatalog(novel)
         .then((catalog) => this.catalog = catalog);
   }
 
@@ -104,12 +109,12 @@ class NovelPacker {
     for (Volume volume in arg.packVolumes) {
       Console.write("正在处理: ${volume.volumeName}\n");
       NavPoint volumeNavPoint = NavPoint(volume.volumeName);
-      List<Future<Document>> futures = volume.chapters
+      List<FutureFunction<Document>> tasks = volume.chapters
           .map((chapter) =>
               _resolveChapter(chapter, packer, arg.addChapterTitle))
           .toList();
 
-      List<Document> chapterDocuments = await Future.wait(futures);
+      List<Document> chapterDocuments = await scheduler.execute(tasks);
       for (int i = 0; i < chapterDocuments.length; i++) {
         Chapter chapter = volume.chapters[i];
         Document document = chapterDocuments[i];
@@ -134,43 +139,45 @@ class NovelPacker {
     Console.write("打包完成: ${packer.absolutePath}");
   }
 
-  Future<Document> _resolveChapter(
+  FutureFunction<Document> _resolveChapter(
     Chapter chapter,
     EpubPacker packer,
     bool addChapterTitle, [
     LightNovelCoverDetector? detector,
-  ]) async {
-    Document doc = await lightNovelSource.getNovelChapter(chapter)();
+  ]) {
+    return () async {
+      Document doc = await lightNovelSource.getNovelChapter(chapter)();
 
-    // 下载图片 添加到epub中
-    List<Element> imgList = doc.querySelectorAll("img");
-    List<String?> srcList = imgList.map((e) => e.attributes["src"]).toList();
-    List<Uint8List> imageDataList = await _getImages(srcList);
-    for (int i = 0; i < imageDataList.length; i++) {
-      Element imageElement = imgList[i];
-      Uint8List data = imageDataList[i];
-      // 跳过错误的图片
-      if (data.isEmpty) {
-        continue;
+      // 下载图片 添加到epub中
+      List<Element> imgList = doc.querySelectorAll("img");
+      List<String?> srcList = imgList.map((e) => e.attributes["src"]).toList();
+      List<Uint8List> imageDataList = await _getImages(srcList);
+      for (int i = 0; i < imageDataList.length; i++) {
+        Element imageElement = imgList[i];
+        Uint8List data = imageDataList[i];
+        // 跳过错误的图片
+        if (data.isEmpty) {
+          continue;
+        }
+
+        String name = "${_imageSequence.next.toString().padLeft(6, '0')}.jpg";
+        String relativeSrc = "images/$name";
+        packer.addImage(name: "OEBPS/$relativeSrc", data: data);
+        imageElement.attributes["src"] = relativeSrc;
+        detector?.add("OEBPS/$relativeSrc", data);
       }
 
-      String name = "${_imageSequence.next.toString().padLeft(6, '0')}.jpg";
-      String relativeSrc = "images/$name";
-      packer.addImage(name: "OEBPS/$relativeSrc", data: data);
-      imageElement.attributes["src"] = relativeSrc;
-      detector?.add("OEBPS/$relativeSrc", data);
-    }
-
-    HTMLUtil.wrapDuoKanImage(doc.body!);
-    // 添加章节标题
-    if (addChapterTitle) {
-      var firstChild = doc.body!.firstChild;
-      Node chapterTitle = Element.html(
-        '<div style="margin-top:0.5em;font-size:1.25em;font-weight: 800;text-align:center;">${chapter.chapterName}</div>',
-      );
-      doc.body!.insertBefore(chapterTitle, firstChild);
-    }
-    return doc;
+      HTMLUtil.wrapDuoKanImage(doc.body!);
+      // 添加章节标题
+      if (addChapterTitle) {
+        var firstChild = doc.body!.firstChild;
+        Node chapterTitle = Element.html(
+          '<div style="margin-top:0.5em;font-size:1.25em;font-weight: 800;text-align:center;">${chapter.chapterName}</div>',
+        );
+        doc.body!.insertBefore(chapterTitle, firstChild);
+      }
+      return doc;
+    };
   }
 
   Future<List<Uint8List>> _getImages(List<String?> srcList) async {
@@ -190,7 +197,7 @@ class NovelPacker {
     if (src == null) {
       return Uint8List(0);
     }
-    return lightNovelSource.getImage(src)();
+    return lightNovelSource.getImage(src).call();
   }
 
   Future<void> _packVolume(
@@ -208,12 +215,12 @@ class NovelPacker {
 
     LightNovelCoverDetector detector = LightNovelCoverDetector();
 
-    List<Future<Document>> futures = volume.chapters
+    List<FutureFunction<Document>> tasks = volume.chapters
         .map((chapter) =>
-            _resolveChapter(chapter, packer, addChapterTitle, detector))
+        _resolveChapter(chapter, packer, addChapterTitle, detector))
         .toList();
 
-    List<Document> chapterDocuments = await Future.wait(futures);
+    List<Document> chapterDocuments = await scheduler.execute(tasks);
 
     // 添加章节资源
     for (int i = 0; i < chapterDocuments.length; i++) {
