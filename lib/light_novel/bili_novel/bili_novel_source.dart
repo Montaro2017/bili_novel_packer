@@ -351,13 +351,17 @@ class BiliNovelSource implements LightNovelSource {
       () => HttpUtil.getBytes(
         url,
         headers: {
-          "referer": domain,
+          "Referer": domain,
+          "User-Agent": userAgent,
+          "Cache-Control": "public",
+          "Accept-Language": "zh-CN,zh;q=0.9"
         },
       ),
       maxRetries: 5,
       predicate: (result) {
         // 403 Forbidden
-        return String.fromCharCodes(result).contains("403");
+        String str = String.fromCharCodes(result);
+        return str.contains("403") && str.contains("nginx");
       },
       delay: Duration(seconds: 5),
       onRetry: () {
