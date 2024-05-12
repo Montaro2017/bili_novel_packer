@@ -4,6 +4,8 @@ import 'dart:typed_data';
 
 import 'package:bili_novel_packer/light_novel/base/light_novel_model.dart';
 import 'package:bili_novel_packer/light_novel/base/light_novel_source.dart';
+import 'package:bili_novel_packer/light_novel/bili_novel/bili_font_secret.dart';
+import 'package:bili_novel_packer/light_novel/bili_novel/bili_novel_constant.dart';
 import 'package:bili_novel_packer/light_novel/bili_novel/bili_novel_secret.dart';
 import 'package:bili_novel_packer/util/html_util.dart';
 import 'package:bili_novel_packer/util/http_util.dart';
@@ -137,7 +139,6 @@ class BiliNovelSource implements LightNovelSource {
       }
       nextPageUrl = page.nextPageUrl;
     } while (nextPageUrl != null);
-    _replaceSecretText(doc.body!);
 
     HTMLUtil.removeLineBreak(doc.body!);
     // 处理图片lazy load 实际src为data-src
@@ -242,13 +243,19 @@ class BiliNovelSource implements LightNovelSource {
     } else if (next != null && nextUrl != null) {
       nextChapter = domain + nextUrl;
     }
-
     HTMLUtil.removeElements(content.querySelectorAll("div"));
+    HTMLUtil.removeElements(content.querySelectorAll("ins"));
     HTMLUtil.removeElements(content.querySelectorAll("figure"));
     HTMLUtil.removeElements(content.querySelectorAll("br"));
     HTMLUtil.removeElements(content.querySelectorAll("script"));
     HTMLUtil.removeElements(content.querySelectorAll(".tp"));
     HTMLUtil.removeElements(content.querySelectorAll(".bd"));
+    _replaceSecretText(content);
+    // _escape(content);
+
+    if (html.contains('font-family: "read"')) {
+      _replaceFontSecretText(content);
+    }
 
     return ChapterPage(
       title: title,
@@ -258,6 +265,30 @@ class BiliNovelSource implements LightNovelSource {
       prevChapterUrl: prevChapter,
       nextChapterUrl: nextChapter,
     );
+  }
+
+  _escape(Element content) {
+    var elements = content.querySelectorAll("*");
+    for (var element in elements) {
+      element.text = escape(element.text);
+    }
+  }
+
+  _replaceFontSecretText(Element content) {
+    Element lastP = content.querySelectorAll("p").last;
+    String text = lastP.text;
+
+    StringBuffer sb = StringBuffer();
+    for (var i = 0; i < text.length; i++) {
+      String beforeChar = text[i];
+      if (blankUnicode.contains(beforeChar)) {
+        continue;
+      }
+      String? replacement = fontSecretMap[beforeChar];
+      String t = replacement ?? beforeChar;
+      sb.write(t);
+    }
+    lastP.text = sb.toString();
   }
 
   /// 替换加密字体对应文字
@@ -304,7 +335,8 @@ class BiliNovelSource implements LightNovelSource {
         },
       ),
       predicate: (result) {
-        return result.contains("error code") || result.contains("Cloudflare to restrict access");
+        return result.contains("error code") ||
+            result.contains("Cloudflare to restrict access");
       },
       delay: Duration(seconds: 10),
       onFinish: () {
