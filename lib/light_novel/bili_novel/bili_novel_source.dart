@@ -275,7 +275,12 @@ class BiliNovelSource implements LightNovelSource {
   }
 
   _replaceFontSecretText(Element content) {
-    Element lastP = content.querySelectorAll("p").last;
+    List<Element> ps = content.querySelectorAll("p");
+    // ISSUES#29
+    if (ps.isEmpty) {
+      return;
+    }
+    Element lastP = ps.last;
     String text = lastP.text;
 
     StringBuffer sb = StringBuffer();
