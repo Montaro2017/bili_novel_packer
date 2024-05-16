@@ -10,6 +10,7 @@ import 'package:bili_novel_packer/light_novel/base/light_novel_source.dart';
 import 'package:bili_novel_packer/light_novel/bili_novel/bili_novel_source.dart';
 import 'package:bili_novel_packer/light_novel/wenku_novel/wenku_novel_source.dart';
 import 'package:bili_novel_packer/pack_argument.dart';
+import 'package:bili_novel_packer/scheduler/executor_service.dart';
 import 'package:bili_novel_packer/scheduler/scheduler.dart';
 import 'package:bili_novel_packer/util/html_util.dart';
 import 'package:bili_novel_packer/util/sequence.dart';
@@ -109,7 +110,7 @@ class NovelPacker {
     for (Volume volume in arg.packVolumes) {
       Console.write("正在处理: ${volume.volumeName}\n");
       NavPoint volumeNavPoint = NavPoint(volume.volumeName);
-      List<FutureFunction<Document>> tasks = volume.chapters
+      List<ExecutorTask<Document>> tasks = volume.chapters
           .map((chapter) =>
               _resolveChapter(chapter, packer, arg.addChapterTitle))
           .toList();
@@ -139,14 +140,17 @@ class NovelPacker {
     Console.write("打包完成: ${packer.absolutePath}");
   }
 
-  FutureFunction<Document> _resolveChapter(
+  ExecutorTask<Document> _resolveChapter(
     Chapter chapter,
     EpubPacker packer,
     bool addChapterTitle, [
     LightNovelCoverDetector? detector,
   ]) {
-    return () async {
-      Document doc = await lightNovelSource.getNovelChapter(chapter)();
+    return (_) async {
+      Document doc = await scheduler.executeOne(
+        lightNovelSource.getNovelChapter(chapter),
+        key: SchedulerKey.document,
+      );
 
       // 下载图片 添加到epub中
       List<Element> imgList = doc.querySelectorAll("img");
@@ -197,7 +201,7 @@ class NovelPacker {
     if (src == null) {
       return Uint8List(0);
     }
-    return lightNovelSource.getImage(src).call();
+    return scheduler.executeOne(lightNovelSource.getImage(src));
   }
 
   Future<void> _packVolume(
@@ -215,12 +219,15 @@ class NovelPacker {
 
     LightNovelCoverDetector detector = LightNovelCoverDetector();
 
-    List<FutureFunction<Document>> tasks = volume.chapters
+    List<ExecutorTask<Document>> tasks = volume.chapters
         .map((chapter) =>
-        _resolveChapter(chapter, packer, addChapterTitle, detector))
+            _resolveChapter(chapter, packer, addChapterTitle, detector))
         .toList();
 
-    List<Document> chapterDocuments = await scheduler.execute(tasks);
+    List<Document> chapterDocuments = await scheduler.execute(
+      tasks,
+      key: SchedulerKey.document,
+    );
 
     // 添加章节资源
     for (int i = 0; i < chapterDocuments.length; i++) {

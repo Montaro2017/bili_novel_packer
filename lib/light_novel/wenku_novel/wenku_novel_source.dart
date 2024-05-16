@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:bili_novel_packer/light_novel/base/light_novel_model.dart';
 import 'package:bili_novel_packer/light_novel/base/light_novel_source.dart';
 import 'package:bili_novel_packer/light_novel/wenku_novel/wenku_novel.dart';
-import 'package:bili_novel_packer/scheduler/executor.dart';
+import 'package:bili_novel_packer/scheduler/executor_service.dart';
 import 'package:bili_novel_packer/scheduler/scheduler.dart';
 import 'package:bili_novel_packer/util/html_util.dart';
 import 'package:bili_novel_packer/util/http_util.dart';
@@ -120,8 +120,8 @@ class WenkuNovelSource implements LightNovelSource {
   }
 
   @override
-  FutureFunction<Document> getNovelChapter(Chapter chapter) {
-    return () async {
+  ExecutorTask<Document> getNovelChapter(Chapter chapter) {
+    return (_) async {
       return retry(
         maxAttempts: 10,
         retryIf: (e) => true,
@@ -191,8 +191,8 @@ class WenkuNovelSource implements LightNovelSource {
   }
 
   @override
-  FutureFunction<Uint8List> getImage(String src) {
-    return () async {
+  ExecutorTask<Uint8List> getImage(String src) {
+    return (_) async {
       return HttpUtil.getBytes(
         src,
         headers: {
@@ -208,20 +208,22 @@ class WenkuNovelSource implements LightNovelSource {
   }
 }
 
-class _WenkuScheduler implements Scheduler {
+class _WenkuScheduler extends Scheduler {
+  final ExecutorService parallelService = ParallelExecutorService(5);
+  final ExecutorService sequentialService = SequentialExecutorService();
+
   @override
   Future<List<T>> execute<T>(
-    List<Future<T> Function()> tasks, {
+    List<ExecutorTask<T>> tasks, {
     Object? key = SchedulerKey.document,
   }) {
     if (key == SchedulerKey.image) {
-      return Executor.parallel(
+      return parallelService.invokeAll(
         tasks,
-        batchSize: 10,
         delay: Duration(seconds: 1),
       );
     } else {
-      return Executor.sequential(
+      return sequentialService.invokeAll(
         tasks,
         delay: Duration(seconds: 1),
       );

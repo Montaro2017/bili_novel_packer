@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:bili_novel_packer/light_novel/base/light_novel_model.dart';
+import 'package:bili_novel_packer/scheduler/executor_service.dart';
 import 'package:bili_novel_packer/scheduler/scheduler.dart';
 import 'package:html/dom.dart';
 
@@ -20,9 +21,9 @@ abstract class LightNovelSource {
 
   Future<Catalog> getNovelCatalog(Novel novel);
 
-  FutureFunction<Document> getNovelChapter(Chapter chapter);
+  ExecutorTask<Document> getNovelChapter(Chapter chapter);
 
-  FutureFunction<Uint8List> getImage(String src);
+  ExecutorTask<Uint8List> getImage(String src);
 }
 
 enum SchedulerKey {

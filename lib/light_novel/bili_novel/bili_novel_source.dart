@@ -7,7 +7,7 @@ import 'package:bili_novel_packer/light_novel/base/light_novel_source.dart';
 import 'package:bili_novel_packer/light_novel/bili_novel/bili_font_secret.dart';
 import 'package:bili_novel_packer/light_novel/bili_novel/bili_novel_constant.dart';
 import 'package:bili_novel_packer/light_novel/bili_novel/bili_novel_secret.dart';
-import 'package:bili_novel_packer/scheduler/executor.dart';
+import 'package:bili_novel_packer/scheduler/executor_service.dart';
 import 'package:bili_novel_packer/scheduler/scheduler.dart';
 import 'package:bili_novel_packer/util/html_util.dart';
 import 'package:bili_novel_packer/util/http_util.dart';
@@ -120,8 +120,8 @@ class BiliNovelSource implements LightNovelSource {
   }
 
   @override
-  FutureFunction<Document> getNovelChapter(Chapter chapter) {
-    return () async {
+  ExecutorTask<Document> getNovelChapter(Chapter chapter) {
+    return (_) async {
       Document doc = Document.html(LightNovelSource.html);
 
       chapter.chapterUrl ??= await _getChapterUrl(chapter);
@@ -344,8 +344,9 @@ class BiliNovelSource implements LightNovelSource {
         },
       ),
       predicate: (result) {
-        return result.contains("error code") ||
+        bool error = result.contains("error code") ||
             result.contains("Cloudflare to restrict access");
+        return error;
       },
       delay: Duration(seconds: 10),
       onFinish: () {
@@ -383,8 +384,8 @@ class BiliNovelSource implements LightNovelSource {
   }
 
   @override
-  FutureFunction<Uint8List> getImage(String src) {
-    return () async {
+  ExecutorTask<Uint8List> getImage(String src) {
+    return (_) async {
       if (src.startsWith("data:image")) {
         src = src.split(",")[1];
         return Future.value(base64.decode(src));
@@ -423,16 +424,18 @@ class ChapterPage {
   });
 }
 
-class _BiliNovelScheduler implements Scheduler {
+class _BiliNovelScheduler extends Scheduler {
+  final ExecutorService parallelService = ParallelExecutorService(5);
+  final ExecutorService sequentialService = SequentialExecutorService();
+
   @override
   Future<List<T>> execute<T>(
-    List<FutureFunction<T>> tasks, {
+    List<ExecutorTask<T>> tasks, {
     Object? key = SchedulerKey.document,
   }) {
-    return Executor.parallel(
+    return parallelService.invokeAll(
       tasks,
-      batchSize: 5,
-      delay: Duration(seconds: 10),
+      delay: Duration(seconds: 5),
     );
   }
 }
