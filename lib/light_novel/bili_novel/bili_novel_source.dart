@@ -5,7 +5,6 @@ import 'dart:typed_data';
 import 'package:bili_novel_packer/light_novel/base/light_novel_model.dart';
 import 'package:bili_novel_packer/light_novel/base/light_novel_source.dart';
 import 'package:bili_novel_packer/light_novel/bili_novel/bili_font_secret.dart';
-import 'package:bili_novel_packer/light_novel/bili_novel/bili_novel_constant.dart';
 import 'package:bili_novel_packer/light_novel/bili_novel/bili_novel_secret.dart';
 import 'package:bili_novel_packer/util/html_util.dart';
 import 'package:bili_novel_packer/util/http_util.dart';
@@ -267,13 +266,6 @@ class BiliNovelSource implements LightNovelSource {
     );
   }
 
-  _escape(Element content) {
-    var elements = content.querySelectorAll("*");
-    for (var element in elements) {
-      element.text = escape(element.text);
-    }
-  }
-
   _replaceFontSecretText(Element content) {
     List<Element> ps = content.querySelectorAll("p");
     // ISSUES#29
@@ -364,9 +356,11 @@ class BiliNovelSource implements LightNovelSource {
       ),
       maxRetries: 5,
       predicate: (result) {
-        // 403 Forbidden
         String str = String.fromCharCodes(result);
-        return str.contains("403") && str.contains("nginx");
+        var unAuth = str.contains("403");
+        var notFound = str.contains("404");
+        var nginxErr = str.contains("nginx");
+        return (unAuth || notFound) && nginxErr;
       },
       delay: Duration(seconds: 5),
       onRetry: () {
