@@ -245,6 +245,7 @@ class BiliNovelSource implements LightNovelSource {
     HTMLUtil.removeElements(content.querySelectorAll("div"));
     HTMLUtil.removeElements(content.querySelectorAll("ins"));
     HTMLUtil.removeElements(content.querySelectorAll("figure"));
+    HTMLUtil.removeElements(content.querySelectorAll("fig"));
     HTMLUtil.removeElements(content.querySelectorAll("br"));
     HTMLUtil.removeElements(content.querySelectorAll("script"));
     HTMLUtil.removeElements(content.querySelectorAll(".tp"));
