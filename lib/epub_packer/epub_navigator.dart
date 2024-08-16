@@ -39,6 +39,7 @@ class EpubNavigator implements EpubNode {
     _builder.element(
       "ncx",
       attributes: {
+        "version": "2005-1",
         "xmlns": "http://www.daisy.org/z3986/2005/ncx/",
       },
       nest: () {
@@ -65,7 +66,7 @@ class _Head extends EpubChildNode {
         builder.element(
           "meta",
           attributes: {
-            "content": "urn:uuid:$bookUuid",
+            "content": bookUuid,
             "name": "dtb:uid",
           },
         );
