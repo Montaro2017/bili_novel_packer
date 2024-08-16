@@ -130,6 +130,7 @@ class EpubPacker {
   }) {
     String href = path.relative(name, from: "OEBPS");
     id ??= href;
+    id = _handleId(id);
     addArchiveFile(
       ArchiveFile(name, data.length, data),
     );
@@ -140,12 +141,23 @@ class EpubPacker {
     _navigator.addNavPoint(navPoint);
   }
 
+  String _handleId(String id) {
+    List<String> symbols = ["\\", "/", "."];
+    for (var symbol in symbols) {
+      id = id.replaceAll(symbol, "_");
+    }
+    return id;
+  }
+
   /// 执行打包操作
   void pack() {
     bookUuid = Uuid().v1();
     Uint8List ncxUint8List = _utf8Encoder.convert(
       _navigator.build().toXmlString(pretty: true),
     );
+    // mimetype 应为打包的第一个文件
+    addArchiveFile(getMimeType());
+    addArchiveFile(getContainer());
 
     /// 在打包前需要添加content.opf和toc.ncx文件
     addArchiveFile(
@@ -165,10 +177,8 @@ class EpubPacker {
         opfUint8List,
       ),
     );
-    addArchiveFile(getContainer());
-    addArchiveFile(getMimeType());
     final ZipFileEncoder zip = ZipFileEncoder();
-    zip.create(epubFilePath);
+    zip.create(epubFilePath, level: 0);
     for (var archiveFile in archiveFiles) {
       zip.addArchiveFile(archiveFile);
     }

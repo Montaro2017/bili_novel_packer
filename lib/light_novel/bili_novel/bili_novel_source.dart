@@ -317,7 +317,39 @@ class BiliNovelSource implements LightNovelSource {
         }
         image.attributes["src"] = src;
       }
+      // 移除img无效属性
+      _removeImageAttr(image);
+      // 添加alt属性
+      _addAlt(image);
     }
+  }
+
+  _removeImageAttr(Element image) {
+    var attrs = [
+      "alt",
+      "class",
+      "dir",
+      "height",
+      "id",
+      "ismap",
+      "lang",
+      "longdesc",
+      "style",
+      "title",
+      "usemap",
+      "width",
+      "src",
+      "xml:lang"
+    ];
+    for (var attr in image.attributes.keys.toList()) {
+      if (!attrs.contains(attr as String)) {
+        image.attributes.remove(attr);
+      }
+    }
+  }
+
+  _addAlt(Element image, [String? alt]) {
+    image.attributes["alt"] = alt ?? "";
   }
 
   Future<String> _httpGetString(String url) {

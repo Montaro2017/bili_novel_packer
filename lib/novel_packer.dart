@@ -223,6 +223,7 @@ class NovelPacker {
     for (int i = 0; i < chapterDocuments.length; i++) {
       var chapter = volume.chapters[i];
       var document = chapterDocuments[i];
+      _addTitle(document, chapter.chapterName);
       String html = _closeTag(document);
       packer.addChapter(
         name:
@@ -276,6 +277,13 @@ class NovelPacker {
       name = name.replaceAll(keyword, " ");
     }
     return name;
+  }
+
+  // 添加title元素
+  _addTitle(Document document, String title) {
+    var element = document.createElement("title");
+    element.text = title;
+    document.head?.append(element);
   }
 
   /// 将标签闭合
