@@ -144,14 +144,16 @@ class Manifest extends EpubChildNode {
           );
         }
         for (ManifestItem item in _manifestList) {
-          builder.element(
-            "item",
-            attributes: {
-              "id": item.id,
-              "href": item.href,
-              "media-type": item.mediaType
-            },
-          );
+          if (item.href != cover) {
+            builder.element(
+              "item",
+              attributes: {
+                "id": item.id,
+                "href": item.href,
+                "media-type": item.mediaType
+              },
+            );
+          }
         }
       },
     );
