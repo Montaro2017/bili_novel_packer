@@ -17,5 +17,5 @@ ArchiveFile getMimeType() {
   return ArchiveFile.string(
     "mimetype",
     "application/epub+zip",
-  );
+  )..compress = false;
 }

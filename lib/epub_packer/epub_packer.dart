@@ -72,9 +72,13 @@ class EpubPacker {
   /// [archiveFile] 要添加的文件
   /// 注意：如果文件内容包含中文 需要使用Utf8Encoder()对内容进行编码
   /// 否则会出现乱码问题
-  void addArchiveFile(ArchiveFile archiveFile) {
+  void addArchiveFile(ArchiveFile archiveFile, [int? index]) {
     if (!_existArchiveFile(archiveFile)) {
-      archiveFiles.add(archiveFile);
+      if (index != null) {
+        archiveFiles.insert(0, archiveFile);
+      } else {
+        archiveFiles.add(archiveFile);
+      }
     }
   }
 
@@ -156,7 +160,7 @@ class EpubPacker {
       _navigator.build().toXmlString(pretty: true),
     );
     // mimetype 应为打包的第一个文件
-    addArchiveFile(getMimeType());
+    addArchiveFile(getMimeType(), 0);
     addArchiveFile(getContainer());
 
     /// 在打包前需要添加content.opf和toc.ncx文件
@@ -178,7 +182,7 @@ class EpubPacker {
       ),
     );
     final ZipFileEncoder zip = ZipFileEncoder();
-    zip.create(epubFilePath, level: 0);
+    zip.create(epubFilePath, level: Deflate.NO_COMPRESSION);
     for (var archiveFile in archiveFiles) {
       zip.addArchiveFile(archiveFile);
     }
