@@ -16,14 +16,14 @@ class BiliNovelHelper {
     var bytes = await HttpUtil.getBytes(url);
     String js = Utf8Decoder().convert(bytes);
     String data = _extractData(js);
-    // String decryptJsCode = _decrypt(data);
-    Map<String, String> secretMap = _toMap(data);
+    String decryptJsCode = _decrypt(data);
+    Map<String, String> secretMap = _toMap(decryptJsCode);
     return secretMap;
   }
 
   static String _extractData(String js) {
-    String before = """h=h""";
-    String after = """;5.6""";
+    String before = """['\\x61\\x70\\x70\\x6c\\x79'](null,\"""";
+    String after = """\"['\\x73\\x70\\x6c\\x69\\x74']""";
     int start = js.indexOf(before);
     int end = js.lastIndexOf(after);
     return js.substring(start + before.length, end);
@@ -49,9 +49,9 @@ class BiliNovelHelper {
     Map<String, String> map = {};
     jsCode = jsCode.replaceAll("\\'", '"');
     jsCode = jsCode.replaceAll("'", '"');
-    List<String> splits = jsCode.split(".0(");
-    String prefix = "1 2(\"";
-    String suffix1 = "\\)";
+    List<String> splits = jsCode.split(".replace");
+    String prefix = "RegExp(\"";
+    String suffix1 = "), \"";
     String suffix2 = "),\"";
     for (String split in splits) {
       int start = split.indexOf(prefix);
