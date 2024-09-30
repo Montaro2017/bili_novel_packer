@@ -18,4 +18,9 @@ class PackArgument {
     required this.combineVolume,
     required this.packVolumes,
   });
+
+  @override
+  String toString() {
+    return 'PackArgument{addChapterTitle: $addChapterTitle, combineVolume: $combineVolume, packVolumes: $packVolumes}';
+  }
 }

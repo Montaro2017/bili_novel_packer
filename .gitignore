@@ -6,3 +6,5 @@
 # Conventional directory for build output.
 build/
 pubspec.lock
+
+bili_novel.log

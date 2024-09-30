@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:bili_novel_packer/light_novel/base/light_novel_model.dart';
+import 'package:bili_novel_packer/log.dart';
 import 'package:bili_novel_packer/novel_packer.dart';
 import 'package:bili_novel_packer/pack_argument.dart';
 import 'package:console/console.dart';
@@ -13,6 +14,7 @@ void main(List<String> args) async {
   try {
     await start();
   } catch (e, stackTrace) {
+    logger.e(e, stackTrace: stackTrace);
     print(e);
     print(stackTrace);
     print("运行出错，按回车键退出.($version)");
@@ -30,11 +32,15 @@ void printWelcome() {
 
 Future<void> start() async {
   var url = readUrl();
+  logger.i("version: $version");
+  logger.i("URL: $url");
   var packer = NovelPacker.fromUrl(url);
   print("正在加载数据...");
   await packer.init();
+  logger.i(packer.novel);
   printNovelDetail(packer.novel);
   var arg = readPackArgument(packer.catalog);
+  logger.i(arg);
   await packer.pack(arg);
   // 防止打包完成后直接退出 无法查看到结果
   print("全部任务已完成，按回车键退出.");

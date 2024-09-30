@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:bili_novel_packer/light_novel/base/light_novel_model.dart';
 import 'package:bili_novel_packer/light_novel/base/light_novel_source.dart';
 import 'package:bili_novel_packer/light_novel/wenku_novel/wenku_novel.dart';
+import 'package:bili_novel_packer/log.dart';
 import 'package:bili_novel_packer/util/html_util.dart';
 import 'package:bili_novel_packer/util/http_util.dart';
 import 'package:bili_novel_packer/util/url_util.dart';
@@ -131,17 +132,25 @@ class WenkuNovelSource implements LightNovelSource {
   Future<Document> _getNovelChapter(Chapter chapter) async {
     return await lock.synchronized(() async {
       String url = chapter.chapterUrl!;
+      logger.i(" ==> ${chapter.volume.volumeName} ${chapter.chapterName} ${chapter.chapterUrl}");
       // await Future.delayed(Duration(milliseconds: 0));
-      var doc = parse(await HttpUtil.getStringFromGbk(
+      String html = await HttpUtil.getStringFromGbk(
         url,
         headers: {
           "User-Agent": userAgent,
           "Accept":
               "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
         },
-      ));
+      );
+      var doc = parse(html);
       var content = doc.querySelector("#content");
-      if (content == null && doc.outerHtml.contains("Cloudflare")) throw Exception("Cloudflare Error");
+      if (content == null && doc.outerHtml.contains("Cloudflare")) {
+        logger.i("GET $url ERROR");
+        logger.i(html);
+        throw Exception("Cloudflare Error ");
+      } else {
+        logger.i("GET $url OK");
+      }
       HTMLUtil.removeElements(content!.querySelectorAll("#contentdp"));
       HTMLUtil.removeElements(content.querySelectorAll("br"));
       return _wrapDocument(content);

@@ -15,6 +15,8 @@ import 'package:bili_novel_packer/util/sequence.dart';
 import 'package:console/console.dart';
 import 'package:html/dom.dart';
 
+import 'package:bili_novel_packer/log.dart';
+
 class NovelPacker {
   static final List<LightNovelSource> sources = [
     BiliNovelSource(),
@@ -63,22 +65,22 @@ class NovelPacker {
   }
 
   Future<void> pack(PackArgument arg) async {
-    if (lightNovelSource is WenkuNovelSource) {
-      print("[注意]: 轻小说文库设置了速率限制，不能请求过快，因此打包速度较慢，请耐心等待.\n");
-    }
     if (lightNovelSource is BiliNovelSource) {
       await BiliNovelSource.init();
     }
     if (!arg.combineVolume) {
       for (var volume in arg.packVolumes) {
+        logger.i("开始打包 ${volume.catalog.novel.title} ${volume.volumeName}");
         _imageSequence.reset();
         _chapterSequence.reset();
         await _packVolume(volume, arg.addChapterTitle);
+        logger.i("打包完成 ${volume.catalog.novel.title} ${volume.volumeName}");
       }
     } else {
       // 合并分卷
       String title = _sanitizeFileName(novel.title);
       String path = "$title${Platform.pathSeparator}$title.epub";
+      logger.i("EPUB file: $path");
       await _combineVolume(path, arg);
     }
   }
@@ -102,6 +104,7 @@ class NovelPacker {
     packer.cover = coverName;
 
     for (Volume volume in arg.packVolumes) {
+      logger.i("开始处理: ${volume.volumeName}");
       Console.write("正在处理: ${volume.volumeName}\n");
       NavPoint volumeNavPoint = NavPoint(volume.volumeName);
       List<Future<Document>> futures = volume.chapters
@@ -129,6 +132,7 @@ class NovelPacker {
         }
       }
       packer.addNavPoint(volumeNavPoint);
+      logger.i("处理完成: ${volume.volumeName}");
     }
     packer.pack();
     Console.write("打包完成: ${packer.absolutePath}");
@@ -140,6 +144,7 @@ class NovelPacker {
     bool addChapterTitle, [
     LightNovelCoverDetector? detector,
   ]) async {
+
     Document doc = await lightNovelSource.getNovelChapter(chapter);
 
     // 下载图片 添加到epub中
@@ -170,6 +175,7 @@ class NovelPacker {
       );
       doc.body!.insertBefore(chapterTitle, firstChild);
     }
+    logger.i(" <== ${chapter.volume.volumeName} ${chapter.chapterName}");
     return doc;
   }
 
@@ -237,6 +243,7 @@ class NovelPacker {
     await _resolveCover(volume, packer, detector);
     // 写出目标文件
     packer.pack();
+    logger.i("EPUB file: ${packer.absolutePath}");
     Console.write("打包完成: ${packer.absolutePath}\n\n");
   }
 

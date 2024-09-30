@@ -11,6 +11,7 @@ import 'package:bili_novel_packer/util/http_util.dart';
 import 'package:bili_novel_packer/util/retry_util.dart';
 import 'package:html/dom.dart';
 import 'package:html/parser.dart';
+import 'package:bili_novel_packer/log.dart';
 
 class BiliNovelSource implements LightNovelSource {
   static final RegExp _exp =
@@ -40,22 +41,31 @@ class BiliNovelSource implements LightNovelSource {
   Future<Novel> getNovel(String url) async {
     String id = _getId(url);
     Novel novel = Novel();
-    var doc = parse(await HttpUtil.getString("$domain/novel/$id.html"));
-
-    novel.id = id.toString();
-    novel.url = url;
-    novel.title = doc.querySelector(".book-title")!.text;
-    novel.coverUrl = doc.querySelector(".book-layout img")!.attributes["src"]!;
-    novel.tags = doc
-        .querySelectorAll(".book-cell .book-meta span em")
-        .map((e) => e.text)
-        .toList();
-    novel.publisher = doc.querySelector(".tag-small.orange")?.text;
-    novel.status =
-        doc.querySelector(".book-cell .book-meta+.book-meta")!.nodes.last.text!;
-    novel.author = doc.querySelector(".book-rand-a span")!.text;
-    novel.description = doc.querySelector("#bookSummary content")!.text;
-    return novel;
+    String html = await HttpUtil.getString("$domain/novel/$id.html");
+    try {
+      var doc = parse(html);
+      novel.id = id.toString();
+      novel.url = url;
+      novel.title = doc.querySelector(".book-title")!.text;
+      novel.coverUrl =
+          doc.querySelector(".book-layout img")!.attributes["src"]!;
+      novel.tags = doc
+          .querySelectorAll(".book-cell .book-meta span em")
+          .map((e) => e.text)
+          .toList();
+      novel.publisher = doc.querySelector(".tag-small.orange")?.text;
+      novel.status = doc
+          .querySelector(".book-cell .book-meta+.book-meta")!
+          .nodes
+          .last
+          .text!;
+      novel.author = doc.querySelector(".book-rand-a span")!.text;
+      novel.description = doc.querySelector("#bookSummary content")!.text;
+      return novel;
+    } catch (e) {
+      logger.i(html);
+      rethrow;
+    }
   }
 
   String _getId(String url) {
@@ -124,6 +134,7 @@ class BiliNovelSource implements LightNovelSource {
     if (chapter.chapterUrl == null) {
       throw "Empty chapter url";
     }
+    logger.i(" ==> ${chapter.volume.volumeName} ${chapter.chapterName} ${chapter.chapterUrl}");
     String? nextPageUrl = chapter.chapterUrl!;
     do {
       ChapterPage page = await _getChapterPage(nextPageUrl!);
@@ -213,7 +224,14 @@ class BiliNovelSource implements LightNovelSource {
     if (!url.contains("_")) {
       title = doc.querySelector("#atitle")?.text;
     }
-    var content = doc.querySelector("#acontentz")!;
+    var content = doc.querySelector("#acontentz");
+    if (content == null) {
+      logger.i("GET $url ERROR");
+      logger.i(html);
+      throw "运行出错，请提交Issues并上传日志文件($logFilePath)，下次运行会清空日志。";
+    } else {
+      logger.i("GET $url OK");
+    }
 
     String? prevPage;
     String? nextPage;
