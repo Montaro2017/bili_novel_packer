@@ -175,7 +175,7 @@ class NovelPacker {
       );
       doc.body!.insertBefore(chapterTitle, firstChild);
     }
-    logger.i(" <== ${chapter.volume.volumeName} ${chapter.chapterName}");
+    logger.i(" OK ${chapter.volume.volumeName} ${chapter.chapterName} ");
     return doc;
   }
 
