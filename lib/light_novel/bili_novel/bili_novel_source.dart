@@ -6,12 +6,12 @@ import 'package:bili_novel_packer/light_novel/base/light_novel_model.dart';
 import 'package:bili_novel_packer/light_novel/base/light_novel_source.dart';
 import 'package:bili_novel_packer/light_novel/bili_novel/bili_font_secret.dart';
 import 'package:bili_novel_packer/light_novel/bili_novel/bili_novel_secret.dart';
+import 'package:bili_novel_packer/log.dart';
 import 'package:bili_novel_packer/util/html_util.dart';
 import 'package:bili_novel_packer/util/http_util.dart';
 import 'package:bili_novel_packer/util/retry_util.dart';
 import 'package:html/dom.dart';
 import 'package:html/parser.dart';
-import 'package:bili_novel_packer/log.dart';
 
 class BiliNovelSource implements LightNovelSource {
   static final RegExp _exp =
@@ -134,7 +134,8 @@ class BiliNovelSource implements LightNovelSource {
     if (chapter.chapterUrl == null) {
       throw "Empty chapter url";
     }
-    logger.i(" ==> ${chapter.volume.volumeName} ${chapter.chapterName} ${chapter.chapterUrl}");
+    logger.i(
+        " ==> ${chapter.volume.volumeName} ${chapter.chapterName} ${chapter.chapterUrl}");
     String? nextPageUrl = chapter.chapterUrl!;
     do {
       ChapterPage page = await _getChapterPage(nextPageUrl!);
@@ -384,7 +385,8 @@ class BiliNovelSource implements LightNovelSource {
       ),
       predicate: (result) {
         return result.contains("error code") ||
-            result.contains("Cloudflare to restrict access");
+            result.contains("Cloudflare to restrict access") ||
+            result.contains("503 Service Temporarily Unavailable");
       },
       delay: Duration(seconds: 10),
       onFinish: () {
