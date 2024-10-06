@@ -60,7 +60,7 @@ class WenkuNovelSource implements LightNovelSource {
 
     novel.tags =
         td.querySelector("span")!.text.replaceFirst("作品Tags：", "").split(" ");
-    novel.description = td.querySelectorAll("span")[5].text;
+    novel.description = td.querySelectorAll("span").last.text;
 
     novel.catalogUrl =
         doc.querySelector("legend + div > a")!.attributes["href"]!;
@@ -196,6 +196,7 @@ class WenkuNovelSource implements LightNovelSource {
 
   @override
   Future<Uint8List> getImage(String src) {
+    print(src);
     return HttpUtil.getBytes(
       src,
       headers: {
