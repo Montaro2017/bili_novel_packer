@@ -9,13 +9,12 @@ import 'package:bili_novel_packer/light_novel/base/light_novel_model.dart';
 import 'package:bili_novel_packer/light_novel/base/light_novel_source.dart';
 import 'package:bili_novel_packer/light_novel/bili_novel/bili_novel_source.dart';
 import 'package:bili_novel_packer/light_novel/wenku_novel/wenku_novel_source.dart';
+import 'package:bili_novel_packer/log.dart';
 import 'package:bili_novel_packer/pack_argument.dart';
 import 'package:bili_novel_packer/util/html_util.dart';
 import 'package:bili_novel_packer/util/sequence.dart';
 import 'package:console/console.dart';
 import 'package:html/dom.dart';
-
-import 'package:bili_novel_packer/log.dart';
 
 class NovelPacker {
   static final List<LightNovelSource> sources = [
@@ -135,7 +134,7 @@ class NovelPacker {
       logger.i("处理完成: ${volume.volumeName}");
     }
     packer.pack();
-    Console.write("打包完成: ${packer.absolutePath}");
+    Console.write("打包完成: ${packer.absolutePath}\n");
   }
 
   Future<Document> _resolveChapter(
@@ -270,8 +269,8 @@ class NovelPacker {
   }
 
   String _getEpubName(Volume volume) {
-    String title = _sanitizeFileName(volume.catalog.novel.title).trim();
-    String volumeName = _sanitizeFileName(volume.volumeName).trim();
+    String title = _sanitizeFileName(volume.catalog.novel.title);
+    String volumeName = _sanitizeFileName(volume.volumeName);
     if (volumeName == "") {
       return "$title${Platform.pathSeparator}$title.epub";
     }
@@ -283,6 +282,7 @@ class NovelPacker {
     for (var keyword in keywords) {
       name = name.replaceAll(keyword, " ");
     }
+    name = name.trim();
     return name;
   }
 
