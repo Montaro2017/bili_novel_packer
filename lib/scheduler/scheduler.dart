@@ -14,13 +14,15 @@ class Scheduler {
   Completer _completer = Completer<void>()..complete();
 
   Scheduler(int n, Duration per) {
-    if (n > 0) {
+    if (n > 0 && per.inMilliseconds > 0) {
       Duration gap = Duration(milliseconds: (per.inMilliseconds / n).ceil());
       _gap = gap < Duration.zero ? Duration.zero : gap;
     } else {
       _gap = Duration.zero;
     }
   }
+
+  Scheduler.unlimited() : this(0, Duration.zero);
 
   Future<R> run<R>(SchedulerTask<R> task) async {
     _queue.add(task);
