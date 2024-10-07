@@ -33,9 +33,10 @@ void main() {
   });
 
   test("RateScheduler", () async {
-    Scheduler scheduler = Scheduler(1, Duration(seconds: 2));
-    for (int i = 1; i <= 10; i++) {
-      scheduler.run((_) {
+    Scheduler scheduler = Scheduler(0, Duration(seconds: 2));
+    for (int i = 1; i <= 100; i++) {
+      scheduler.run((_) async {
+        await Future.delayed(Duration(milliseconds: 30));
         return i;
       }).then((v) {
         print("i = $v");

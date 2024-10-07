@@ -83,6 +83,16 @@ class Scheduler {
     while (_queue.isNotEmpty) {
       await Future.delayed(Duration(milliseconds: 1));
     }
+    List<Future<void>> futures = [];
+    for (var r in _resultMap.values) {
+      futures.add(Future(() async {
+        while (r.status == _TaskStatus.pending ||
+            r.status == _TaskStatus.inProgress) {
+          await Future.delayed(Duration(milliseconds: 1));
+        }
+      }));
+    }
+    await Future.wait(futures);
   }
 }
 
