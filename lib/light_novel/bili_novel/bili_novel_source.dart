@@ -41,7 +41,7 @@ class BiliNovelSource implements LightNovelSource {
   Future<Novel> getNovel(String url) async {
     String id = _getId(url);
     Novel novel = Novel();
-    String html = await HttpUtil.getString("$domain/novel/$id.html");
+    String html = await httpGetString("$domain/novel/$id.html");
     try {
       var doc = parse(html);
       novel.id = id.toString();
@@ -79,8 +79,7 @@ class BiliNovelSource implements LightNovelSource {
   /// 获取小说目录
   @override
   Future<Catalog> getNovelCatalog(Novel novel) async {
-    var doc =
-        parse(await HttpUtil.getString("$domain/novel/${novel.id}/catalog"));
+    var doc = parse(await httpGetString("$domain/novel/${novel.id}/catalog"));
     var catalog = Catalog(novel);
     _replaceImageSrc(doc.body!);
     var children = doc.querySelector("#volumes")!.children;
@@ -374,7 +373,7 @@ class BiliNovelSource implements LightNovelSource {
   Future<String> _httpGetString(String url) {
     Completer completer = Completer<void>();
     return retryByResult(
-      () => HttpUtil.getString(
+      () => httpGetString(
         url,
         headers: {
           "User-Agent": userAgent,
@@ -398,7 +397,7 @@ class BiliNovelSource implements LightNovelSource {
   Future<Uint8List> _httpGetImage(String url) {
     Completer completer = Completer<void>();
     return retryByResult(
-      () => HttpUtil.getBytes(
+      () => httpGetBytes(
         url,
         headers: {
           "Referer": domain,

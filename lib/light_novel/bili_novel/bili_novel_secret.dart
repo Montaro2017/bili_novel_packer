@@ -1,4 +1,3 @@
-import 'dart:convert';
 
 import 'package:bili_novel_packer/light_novel/bili_novel/bili_novel_source.dart';
 import 'package:bili_novel_packer/util/http_util.dart';
@@ -10,11 +9,9 @@ int codeUpperA = 'A'.codeUnitAt(0);
 int codeUpperZ = 'Z'.codeUnitAt(0);
 
 class BiliNovelHelper {
-
   static Future<Map<String, String>> getSecretMap() async {
     String url = "${BiliNovelSource.domain}/themes/zhmb/js/readtools.js";
-    var bytes = await HttpUtil.getBytes(url);
-    String js = Utf8Decoder().convert(bytes);
+    String js = await httpGetString(url);
     String data = _extractData(js);
     String decryptJsCode = _decrypt(data);
     Map<String, String> secretMap = _toMap(decryptJsCode);
@@ -70,10 +67,9 @@ class BiliNovelHelper {
         continue;
       }
       String value =
-      split.substring(start + suffix.length, start + suffix.length + 1);
+          split.substring(start + suffix.length, start + suffix.length + 1);
       map[key] = value;
     }
     return map;
   }
-
 }

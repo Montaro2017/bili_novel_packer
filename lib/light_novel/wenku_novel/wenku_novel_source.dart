@@ -7,6 +7,7 @@ import 'package:bili_novel_packer/log.dart';
 import 'package:bili_novel_packer/util/html_util.dart';
 import 'package:bili_novel_packer/util/http_util.dart';
 import 'package:bili_novel_packer/util/url_util.dart';
+import 'package:fast_gbk/fast_gbk.dart';
 import 'package:html/dom.dart';
 import 'package:html/parser.dart';
 import 'package:retry/retry.dart';
@@ -31,12 +32,15 @@ class WenkuNovelSource implements LightNovelSource {
   Future<Novel> getNovel(String url) async {
     String id = _getId(url);
     WenkuNovel novel = WenkuNovel();
+    url = "$domain/book/$id.htm";
+    novel.url = url;
     var doc = parse(
-      await HttpUtil.getStringFromGbk(
-        "$domain/book/$id.htm",
+      await httpGetString(
+        url,
         headers: {
           "User-Agent": userAgent,
         },
+        codec: gbk,
       ),
     );
 
@@ -77,11 +81,12 @@ class WenkuNovelSource implements LightNovelSource {
     String url = (novel as WenkuNovel).catalogUrl;
     String prefix = URLUtil.resolve(url, "./");
     var doc = parse(
-      await HttpUtil.getStringFromGbk(
+      await httpGetString(
         url,
         headers: {
           "User-Agent": userAgent,
         },
+        codec: gbk,
       ),
     );
     var tdList = doc.querySelectorAll("table td");
@@ -132,15 +137,17 @@ class WenkuNovelSource implements LightNovelSource {
   Future<Document> _getNovelChapter(Chapter chapter) async {
     return await lock.synchronized(() async {
       String url = chapter.chapterUrl!;
-      logger.i(" ==> ${chapter.volume.volumeName} ${chapter.chapterName} ${chapter.chapterUrl}");
+      logger.i(
+          " ==> ${chapter.volume.volumeName} ${chapter.chapterName} ${chapter.chapterUrl}");
       // await Future.delayed(Duration(milliseconds: 0));
-      String html = await HttpUtil.getStringFromGbk(
+      String html = await httpGetString(
         url,
         headers: {
           "User-Agent": userAgent,
           "Accept":
               "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
         },
+        codec: gbk,
       );
       var doc = parse(html);
       var content = doc.querySelector("#content");
@@ -196,8 +203,7 @@ class WenkuNovelSource implements LightNovelSource {
 
   @override
   Future<Uint8List> getImage(String src) {
-    print(src);
-    return HttpUtil.getBytes(
+    return httpGetBytes(
       src,
       headers: {
         "User-Agent": userAgent,
