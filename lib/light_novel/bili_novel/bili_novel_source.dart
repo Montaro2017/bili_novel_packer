@@ -7,9 +7,9 @@ import 'package:bili_novel_packer/light_novel/base/light_novel_source.dart';
 import 'package:bili_novel_packer/light_novel/bili_novel/bili_font_secret.dart';
 import 'package:bili_novel_packer/light_novel/bili_novel/bili_novel_secret.dart';
 import 'package:bili_novel_packer/log.dart';
+import 'package:bili_novel_packer/scheduler/scheduler.dart';
 import 'package:bili_novel_packer/util/html_util.dart';
 import 'package:bili_novel_packer/util/http_util.dart';
-import 'package:bili_novel_packer/util/retry_util.dart';
 import 'package:html/dom.dart';
 import 'package:html/parser.dart';
 
@@ -24,6 +24,9 @@ class BiliNovelSource implements LightNovelSource {
       "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
 
   static final String cookie = "night=0";
+
+  static final Scheduler _scheduler = Scheduler(45, Duration(minutes: 1));
+  static final Scheduler _imageScheduler = Scheduler(10, Duration(seconds: 1));
 
   @override
   final String name = "哔哩轻小说";
@@ -269,7 +272,6 @@ class BiliNovelSource implements LightNovelSource {
     HTMLUtil.removeElements(content.querySelectorAll(".tp"));
     HTMLUtil.removeElements(content.querySelectorAll(".bd"));
     _replaceSecretText(content);
-    // _escape(content);
 
     if (html.contains('font-family: "read"')) {
       _replaceFontSecretText(content);
@@ -371,57 +373,23 @@ class BiliNovelSource implements LightNovelSource {
   }
 
   Future<String> _httpGetString(String url) {
-    Completer completer = Completer<void>();
-    return retryByResult(
-      () => httpGetString(
-        url,
-        headers: {
-          "User-Agent": userAgent,
-          "Accept": "*/*",
-          "Accept-Language": "zh-CN,zh;q=0.9",
-          "Cookie": cookie
-        },
-      ),
-      predicate: (result) {
-        return result.contains("error code") ||
-            result.contains("Cloudflare to restrict access") ||
-            result.contains("503 Service Temporarily Unavailable");
-      },
-      delay: Duration(seconds: 10),
-      onFinish: () {
-        completer.complete();
-      },
-    );
-  }
-
-  Future<Uint8List> _httpGetImage(String url) {
-    Completer completer = Completer<void>();
-    return retryByResult(
-      () => httpGetBytes(
-        url,
-        headers: {
-          "Referer": domain,
-          "User-Agent": userAgent,
-          "Cache-Control": "public",
-          "Accept-Language": "zh-CN,zh;q=0.9"
-        },
-      ),
-      maxRetries: 5,
-      predicate: (result) {
-        String str = String.fromCharCodes(result);
-        var unAuth = str.contains("403");
-        var notFound = str.contains("404");
-        var nginxErr = str.contains("nginx");
-        return (unAuth || notFound) && nginxErr;
-      },
-      delay: Duration(seconds: 5),
-      onRetry: () {
-        // print("$url 403");
-      },
-      onFinish: () {
-        completer.complete();
-      },
-    );
+    return _scheduler.run((c) async {
+      String html = await httpGetString(url, headers: {
+        "User-Agent": userAgent,
+        "Accept": "*/*",
+        "Accept-Language": "zh-CN,zh;q=0.9",
+        "Cookie": cookie
+      });
+      if (html.contains("error code") ||
+          html.contains("Cloudflare to restrict access") ||
+          html.contains("503 Service Temporarily Unavailable")) {
+        c.pause();
+        await Future.delayed(Duration(seconds: 10));
+        c.resume();
+        return _httpGetString(url);
+      }
+      return html;
+    });
   }
 
   @override
@@ -435,8 +403,17 @@ class BiliNovelSource implements LightNovelSource {
     }
     // 处理图片url域名特殊字符 𝘣 = \ud835\ude23
     src = src.replaceAll("\ud835\ude23", "b");
-    var ret = _httpGetImage(src);
-    return ret;
+    return _imageScheduler.run((_) async {
+      return httpGetBytes(
+        src,
+        headers: {
+          "Referer": domain,
+          "User-Agent": userAgent,
+          "Cache-Control": "public",
+          "Accept-Language": "zh-CN,zh;q=0.9"
+        },
+      );
+    });
   }
 }
 

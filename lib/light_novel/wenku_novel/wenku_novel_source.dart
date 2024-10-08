@@ -4,6 +4,7 @@ import 'package:bili_novel_packer/light_novel/base/light_novel_model.dart';
 import 'package:bili_novel_packer/light_novel/base/light_novel_source.dart';
 import 'package:bili_novel_packer/light_novel/wenku_novel/wenku_novel.dart';
 import 'package:bili_novel_packer/log.dart';
+import 'package:bili_novel_packer/scheduler/scheduler.dart';
 import 'package:bili_novel_packer/util/html_util.dart';
 import 'package:bili_novel_packer/util/http_util.dart';
 import 'package:bili_novel_packer/util/url_util.dart';
@@ -28,6 +29,8 @@ class WenkuNovelSource implements LightNovelSource {
 
   static final Lock lock = Lock();
 
+  static final Scheduler _scheduler = Scheduler.unlimited();
+
   @override
   Future<Novel> getNovel(String url) async {
     String id = _getId(url);
@@ -35,13 +38,9 @@ class WenkuNovelSource implements LightNovelSource {
     url = "$domain/book/$id.htm";
     novel.url = url;
     var doc = parse(
-      await httpGetString(
-        url,
-        headers: {
-          "User-Agent": userAgent,
-        },
-        codec: gbk,
-      ),
+      await _httpGet(url, headers: {
+        "User-Agent": userAgent,
+      }),
     );
 
     novel.id = id.toString();
@@ -81,12 +80,11 @@ class WenkuNovelSource implements LightNovelSource {
     String url = (novel as WenkuNovel).catalogUrl;
     String prefix = URLUtil.resolve(url, "./");
     var doc = parse(
-      await httpGetString(
+      await _httpGet(
         url,
         headers: {
           "User-Agent": userAgent,
         },
-        codec: gbk,
       ),
     );
     var tdList = doc.querySelectorAll("table td");
@@ -135,33 +133,27 @@ class WenkuNovelSource implements LightNovelSource {
   }
 
   Future<Document> _getNovelChapter(Chapter chapter) async {
-    return await lock.synchronized(() async {
-      String url = chapter.chapterUrl!;
-      logger.i(
-          " ==> ${chapter.volume.volumeName} ${chapter.chapterName} ${chapter.chapterUrl}");
-      // await Future.delayed(Duration(milliseconds: 0));
-      String html = await httpGetString(
-        url,
-        headers: {
-          "User-Agent": userAgent,
-          "Accept":
-              "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
-        },
-        codec: gbk,
-      );
-      var doc = parse(html);
-      var content = doc.querySelector("#content");
-      if (content == null && doc.outerHtml.contains("Cloudflare")) {
-        logger.i("GET $url ERROR");
-        logger.i(html);
-        throw Exception("Cloudflare Error ");
-      } else {
-        logger.i("GET $url OK");
-      }
-      HTMLUtil.removeElements(content!.querySelectorAll("#contentdp"));
-      HTMLUtil.removeElements(content.querySelectorAll("br"));
-      return _wrapDocument(content);
-    });
+    String url = chapter.chapterUrl!;
+    logger.i(
+        " ==> ${chapter.volume.volumeName} ${chapter.chapterName} ${chapter.chapterUrl}");
+    String html = await _httpGet(
+      url,
+      headers: {
+        "User-Agent": userAgent,
+      },
+    );
+    var doc = parse(html);
+    var content = doc.querySelector("#content");
+    if (content == null && doc.outerHtml.contains("Cloudflare")) {
+      logger.i("GET $url ERROR");
+      logger.i(html);
+      throw Exception("Cloudflare Error ");
+    } else {
+      logger.i("GET $url OK");
+    }
+    HTMLUtil.removeElements(content!.querySelectorAll("#contentdp"));
+    HTMLUtil.removeElements(content.querySelectorAll("br"));
+    return _wrapDocument(content);
   }
 
   @override
@@ -203,11 +195,34 @@ class WenkuNovelSource implements LightNovelSource {
 
   @override
   Future<Uint8List> getImage(String src) {
-    return httpGetBytes(
-      src,
-      headers: {
-        "User-Agent": userAgent,
-      },
+    return _scheduler.run(
+      (c) => httpGetBytes(
+        src,
+        headers: {
+          "User-Agent": userAgent,
+        },
+      ),
     );
+  }
+
+  Future<String> _httpGet(
+    String url, {
+    Map<String, String>? headers,
+  }) {
+    return _scheduler.run((c) async {
+      String html = await httpGetString(
+        url,
+        headers: headers,
+        codec: gbk,
+      );
+      if (html.contains("rate limited")) {
+        logger.i("GET $url Reach rate limit");
+        c.pause();
+        await Future.delayed(Duration(seconds: 10));
+        c.resume();
+        return _httpGet(url, headers: headers);
+      }
+      return html;
+    });
   }
 }

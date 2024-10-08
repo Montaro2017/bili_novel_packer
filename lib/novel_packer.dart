@@ -115,6 +115,7 @@ class NovelPacker {
       for (int i = 0; i < chapterDocuments.length; i++) {
         Chapter chapter = volume.chapters[i];
         Document document = chapterDocuments[i];
+        _addTitle(document, chapter.chapterName);
         String html = _closeTag(document);
         String name =
             "chapter${_chapterSequence.next.toString().padLeft(6, "0")}.xhtml";
