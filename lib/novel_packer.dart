@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:bili_novel_packer/assets/assets.dart';
 import 'package:bili_novel_packer/epub_packer/epub_navigator.dart';
 import 'package:bili_novel_packer/epub_packer/epub_packer.dart';
 import 'package:bili_novel_packer/light_novel/base/light_novel_cover_detector.dart';
@@ -102,6 +103,10 @@ class NovelPacker {
     packer.addImage(name: "OEBPS/$coverName", data: coverData);
     packer.cover = coverName;
 
+    if (arg.addChapterTitle) {
+      packer.addStylesheet(styleCss());
+    }
+
     for (Volume volume in arg.packVolumes) {
       logger.i("开始处理: ${volume.volumeName}");
       Console.write("正在处理: ${volume.volumeName}\n");
@@ -144,7 +149,6 @@ class NovelPacker {
     bool addChapterTitle, [
     LightNovelCoverDetector? detector,
   ]) async {
-
     Document doc = await lightNovelSource.getNovelChapter(chapter);
 
     // 下载图片 添加到epub中
@@ -169,9 +173,12 @@ class NovelPacker {
     HTMLUtil.wrapDuoKanImage(doc.body!);
     // 添加章节标题
     if (addChapterTitle) {
+      doc.head!.append(Element.html(
+        '<link rel="stylesheet" type="text/css" href="styles/style.css">',
+      ));
       var firstChild = doc.body!.firstChild;
       Node chapterTitle = Element.html(
-        '<div style="margin-top:0.5em;font-size:1.25em;font-weight: 800;text-align:center;">${chapter.chapterName}</div>',
+        '<div class="chapter-title">${chapter.chapterName}</div>',
       );
       doc.body!.insertBefore(chapterTitle, firstChild);
     }
@@ -217,6 +224,10 @@ class NovelPacker {
     packer.description = novel.description;
 
     LightNovelCoverDetector detector = LightNovelCoverDetector();
+
+    if (addChapterTitle) {
+      packer.addStylesheet(styleCss());
+    }
 
     List<Future<Document>> futures = volume.chapters
         .map((chapter) =>
@@ -297,7 +308,7 @@ class NovelPacker {
   /// 将标签闭合
   String _closeTag(Document document) {
     String html = document.outerHtml;
-    RegExp regExp = RegExp("(<img.*?)>");
+    RegExp regExp = RegExp("(<(?:img|link).*?)>");
     Iterable<RegExpMatch> matches = regExp.allMatches(html);
     for (var match in matches) {
       String img = match.group(0)!;

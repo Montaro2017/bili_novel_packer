@@ -41,6 +41,10 @@ class EpubOpenPackageFormat implements EpubNode {
     manifest.addManifestItem(item);
   }
 
+  void addStylesheet(ManifestItem item) {
+    manifest.addManifestItem(item);
+  }
+
   void addChapter(ManifestItem item) {
     manifest.addManifestItem(item);
     spine.addRef(item.id);

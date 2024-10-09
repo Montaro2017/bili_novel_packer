@@ -7,6 +7,8 @@ import 'package:bili_novel_packer/epub_packer/epub_constant.dart';
 import 'package:bili_novel_packer/epub_packer/epub_navigator.dart';
 import 'package:bili_novel_packer/epub_packer/epub_opf.dart';
 import 'package:bili_novel_packer/media_type.dart' as epub_media_type;
+import 'package:bili_novel_packer/media_type.dart';
+import 'package:bili_novel_packer/util/url_util.dart';
 import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
 
@@ -139,6 +141,14 @@ class EpubPacker {
       ArchiveFile(name, data.length, data),
     );
     _opf.addImage(ManifestItem(id, href, mediaType));
+  }
+
+  void addStylesheet(ArchiveFile archiveFile) {
+    String id = URLUtil.getFileName(archiveFile.name);
+    String href = path.relative(archiveFile.name, from: "OEBPS");
+    id = _handleId(id);
+    addArchiveFile(archiveFile);
+    _opf.addStylesheet(ManifestItem(id, href, css));
   }
 
   void addNavPoint(NavPoint navPoint) {
