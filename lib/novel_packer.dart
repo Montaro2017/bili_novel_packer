@@ -290,12 +290,19 @@ class NovelPacker {
   }
 
   String _sanitizeFileName(String name) {
-    var keywords = {":", "*", "?", "\"", "<", ">", "|"};
+    var keywords = {":", "*", "?", "\"", "\\", "/", "<", ">", "|", "\\0", "　"};
     for (var keyword in keywords) {
       name = name.replaceAll(keyword, " ");
     }
-    name = name.trim();
-    return name;
+    if (name.startsWith(".")) {
+      name = name.substring(1);
+    }
+    if (name.endsWith(".")) {
+      name = name.substring(0, name.length - 1);
+    }
+    // 替换连续空格为一个空格
+    name = name.replaceAllMapped(RegExp("\\s+"), (_) => " ");
+    return name.trim();
   }
 
   // 添加title元素
