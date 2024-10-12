@@ -97,7 +97,9 @@ class NovelPacker {
     packer.subjects = novel.tags ?? [];
     packer.description = novel.description;
     // 封面使用小说封面
-    Uint8List coverData = await _getSingleImage(novel.coverUrl);
+    Uint8List coverData = novel.coverUrl == null
+        ? Uint8List(0)
+        : await _getSingleImage(novel.coverUrl!);
     String coverName =
         "images/${_imageSequence.next.toString().padLeft(6, '0')}.jpg";
     packer.addImage(name: "OEBPS/$coverName", data: coverData);
@@ -122,6 +124,7 @@ class NovelPacker {
         Document document = chapterDocuments[i];
         _addTitle(document, chapter.chapterName);
         String html = _closeTag(document);
+        html = _appendXmlDeclare(html);
         String name =
             "chapter${_chapterSequence.next.toString().padLeft(6, "0")}.xhtml";
         packer.addChapter(
@@ -150,27 +153,9 @@ class NovelPacker {
     LightNovelCoverDetector? detector,
   ]) async {
     Document doc = await lightNovelSource.getNovelChapter(chapter);
+    // 处理图片资源
+    await _resolveImages(doc, packer, detector);
 
-    // 下载图片 添加到epub中
-    List<Element> imgList = doc.querySelectorAll("img");
-    List<String?> srcList = imgList.map((e) => e.attributes["src"]).toList();
-    List<Uint8List> imageDataList = await _getImages(srcList);
-    for (int i = 0; i < imageDataList.length; i++) {
-      Element imageElement = imgList[i];
-      Uint8List data = imageDataList[i];
-      // 跳过错误的图片
-      if (data.isEmpty) {
-        continue;
-      }
-
-      String name = "${_imageSequence.next.toString().padLeft(6, '0')}.jpg";
-      String relativeSrc = "images/$name";
-      packer.addImage(name: "OEBPS/$relativeSrc", data: data);
-      imageElement.attributes["src"] = relativeSrc;
-      detector?.add("OEBPS/$relativeSrc", data);
-    }
-
-    HTMLUtil.wrapDuoKanImage(doc.body!);
     // 添加章节标题
     if (addChapterTitle) {
       doc.head!.append(Element.html(
@@ -182,28 +167,12 @@ class NovelPacker {
       );
       doc.body!.insertBefore(chapterTitle, firstChild);
     }
-    logger.i(" OK ${chapter.volume.volumeName} ${chapter.chapterName} ");
+    logger.i("OK ${chapter.volume.volumeName} ${chapter.chapterName}");
     return doc;
   }
 
-  Future<List<Uint8List>> _getImages(List<String?> srcList) async {
-    List<Future<Uint8List>> futures = [];
-    for (var src in srcList) {
-      futures.add(_getSingleImage(src).catchError(
-        (e) {
-          print("下载图片失败: $src");
-          return Uint8List(0);
-        },
-      ));
-    }
-    return Future.wait(futures);
-  }
-
-  Future<Uint8List> _getSingleImage(String? src) async {
+  Future<Uint8List> _getSingleImage(String src) async {
     try {
-      if (src == null) {
-        return Uint8List(0);
-      }
       return lightNovelSource.getImage(src);
     } catch (e) {
       return Uint8List(0);
@@ -230,8 +199,10 @@ class NovelPacker {
     }
 
     List<Future<Document>> futures = volume.chapters
-        .map((chapter) =>
-            _resolveChapter(chapter, packer, addChapterTitle, detector))
+        .map(
+          (chapter) =>
+              _resolveChapter(chapter, packer, addChapterTitle, detector),
+        )
         .toList();
 
     List<Document> chapterDocuments = await Future.wait(futures);
@@ -242,6 +213,7 @@ class NovelPacker {
       var document = chapterDocuments[i];
       _addTitle(document, chapter.chapterName);
       String html = _closeTag(document);
+      html = _appendXmlDeclare(html);
       packer.addChapter(
         name:
             "OEBPS/chapter${_chapterSequence.next.toString().padLeft(6, "0")}.xhtml",
@@ -258,6 +230,49 @@ class NovelPacker {
     Console.write("打包完成: ${packer.absolutePath}\n\n");
   }
 
+  Future<void> _resolveImages(
+    Document doc,
+    EpubPacker packer,
+    LightNovelCoverDetector? detector,
+  ) async {
+    // 下载图片 添加到epub中
+    List<Element> imgList = doc.querySelectorAll("img");
+    List<Future> futures = [];
+    for (var img in imgList) {
+      futures.add(_resolveSingleImage(img, packer, detector).catchError((e) {
+        print(e);
+      }));
+    }
+    await Future.wait(futures);
+    HTMLUtil.wrapDuoKanImage(doc.body!);
+  }
+
+  Future<void> _resolveSingleImage(
+    Element img,
+    EpubPacker packer,
+    LightNovelCoverDetector? detector,
+  ) async {
+    String? src = img.attributes["src"];
+    if (src == null || src.isEmpty) {
+      return;
+    }
+    Uint8List imageData = await _getSingleImage(src);
+    if (imageData.isEmpty) {
+      print("$src 图片下载失败");
+      return;
+    }
+    String name = "${_imageSequence.next.toString().padLeft(6, '0')}.jpg";
+    String relativeSrc = "images/$name";
+    packer.addImage(name: "OEBPS/$relativeSrc", data: imageData);
+    img.attributes["src"] = relativeSrc;
+    try {
+      detector?.add("OEBPS/$relativeSrc", imageData);
+    } on UnsupportedImageException catch (e) {
+      print("$src ${e.message}");
+      return;
+    }
+  }
+
   Future<void> _resolveCover(
     Volume volume,
     EpubPacker packer,
@@ -265,7 +280,8 @@ class NovelPacker {
   ) async {
     // 优先使用目录中的封面 否则自动检测
     if (volume.cover != null) {
-      Uint8List coverData = await _getSingleImage(volume.cover).catchError((e) {
+      Uint8List coverData =
+          await _getSingleImage(volume.cover!).catchError((e) {
         throw "下载封面失败 ${volume.cover}\n$e";
       });
       String coverName =
@@ -290,12 +306,19 @@ class NovelPacker {
   }
 
   String _sanitizeFileName(String name) {
-    var keywords = {":", "*", "?", "\"", "<", ">", "|"};
+    var keywords = {":", "*", "?", "\"", "\\", "/", "<", ">", "|", "\\0", "　"};
     for (var keyword in keywords) {
       name = name.replaceAll(keyword, " ");
     }
-    name = name.trim();
-    return name;
+    if (name.startsWith(".")) {
+      name = name.substring(1);
+    }
+    if (name.endsWith(".")) {
+      name = name.substring(0, name.length - 1);
+    }
+    // 替换连续空格为一个空格
+    name = name.replaceAllMapped(RegExp("\\s+"), (_) => " ");
+    return name.trim();
   }
 
   // 添加title元素
@@ -318,5 +341,13 @@ class NovelPacker {
       }
     }
     return html;
+  }
+
+  String _appendXmlDeclare(String html) {
+    String xmlDeclare = """<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+""";
+    return xmlDeclare + html;
   }
 }
