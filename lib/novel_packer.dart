@@ -124,6 +124,7 @@ class NovelPacker {
         Document document = chapterDocuments[i];
         _addTitle(document, chapter.chapterName);
         String html = _closeTag(document);
+        html = _appendXmlDeclare(html);
         String name =
             "chapter${_chapterSequence.next.toString().padLeft(6, "0")}.xhtml";
         packer.addChapter(
@@ -212,6 +213,7 @@ class NovelPacker {
       var document = chapterDocuments[i];
       _addTitle(document, chapter.chapterName);
       String html = _closeTag(document);
+      html = _appendXmlDeclare(html);
       packer.addChapter(
         name:
             "OEBPS/chapter${_chapterSequence.next.toString().padLeft(6, "0")}.xhtml",
@@ -339,5 +341,13 @@ class NovelPacker {
       }
     }
     return html;
+  }
+
+  String _appendXmlDeclare(String html) {
+    String xmlDeclare = """<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+""";
+    return xmlDeclare + html;
   }
 }
