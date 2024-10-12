@@ -99,7 +99,7 @@ ImageInfo _getImageInfo(InputStreamBase isb) {
     mimeType = webp;
     return ImageInfo(width, height, mimeType);
   }
-  throw "Unsupported Image";
+  throw UnsupportedImageException("不支持的图片类型");
 }
 
 int _readInt(InputStreamBase isb, int count, bool bigEndian) {
@@ -111,4 +111,10 @@ int _readInt(InputStreamBase isb, int count, bool bigEndian) {
     sv += cnt;
   }
   return ret;
+}
+
+class UnsupportedImageException implements Exception {
+  final String message;
+
+  UnsupportedImageException(this.message);
 }
