@@ -237,40 +237,45 @@ class NovelPacker {
   ) async {
     // 下载图片 添加到epub中
     List<Element> imgList = doc.querySelectorAll("img");
-    List<Future> futures = [];
+    List<Future<Pair<Element, Uint8List>?>> futures = [];
     for (var img in imgList) {
-      futures.add(_resolveSingleImage(img, packer, detector).catchError((e) {
-        print(e);
-      }));
+      futures.add(_resolveSingleImage(img, packer, detector));
     }
-    await Future.wait(futures);
+    List<Pair<Element, Uint8List>?> pairList = await Future.wait(futures);
+    for (Pair<Element, Uint8List>? pair in pairList) {
+      if (pair == null) continue;
+      Element img = pair.v1;
+      Uint8List imageData = pair.v2;
+      String name = "${_imageSequence.next.toString().padLeft(6, '0')}.jpg";
+      String relativeSrc = "images/$name";
+      packer.addImage(name: "OEBPS/$relativeSrc", data: imageData);
+      String? src = img.attributes["src"];
+      img.attributes["src"] = relativeSrc;
+      try {
+        detector?.add("OEBPS/$relativeSrc", imageData);
+      } on UnsupportedImageException catch (e) {
+        print("$src ${e.message}");
+      }
+    }
+
     HTMLUtil.wrapDuoKanImage(doc.body!);
   }
 
-  Future<void> _resolveSingleImage(
+  Future<Pair<Element, Uint8List>?> _resolveSingleImage(
     Element img,
     EpubPacker packer,
     LightNovelCoverDetector? detector,
   ) async {
     String? src = img.attributes["src"];
     if (src == null || src.isEmpty) {
-      return;
+      return null;
     }
     Uint8List imageData = await _getSingleImage(src);
     if (imageData.isEmpty) {
       print("$src 图片下载失败");
-      return;
+      return null;
     }
-    String name = "${_imageSequence.next.toString().padLeft(6, '0')}.jpg";
-    String relativeSrc = "images/$name";
-    packer.addImage(name: "OEBPS/$relativeSrc", data: imageData);
-    img.attributes["src"] = relativeSrc;
-    try {
-      detector?.add("OEBPS/$relativeSrc", imageData);
-    } on UnsupportedImageException catch (e) {
-      print("$src ${e.message}");
-      return;
-    }
+    return Pair(img, imageData);
   }
 
   Future<void> _resolveCover(
@@ -350,4 +355,11 @@ class NovelPacker {
 """;
     return xmlDeclare + html;
   }
+}
+
+class Pair<V1, V2> {
+  V1 v1;
+  V2 v2;
+
+  Pair(this.v1, this.v2);
 }
