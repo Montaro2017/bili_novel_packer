@@ -107,12 +107,7 @@ class WenkuNovelSource implements LightNovelSource {
           "$prefix/$href",
           volume,
         );
-        // 将插图移动至最前面
-        if (chapter.chapterName == "插图") {
-          volume.chapters.insert(0, chapter);
-        } else {
-          volume.chapters.add(chapter);
-        }
+        volume.chapters.add(chapter);
       }
     }
     if (volume != null) {
