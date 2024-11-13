@@ -227,7 +227,9 @@ class BiliNovelSource implements LightNovelSource {
     if (!url.contains("_")) {
       title = doc.querySelector("#atitle")?.text;
     }
-    var content = doc.querySelector(".acontent");
+    var selectors = ["#acontent", ".bcontent"];
+    var content =
+        selectors.map((selector) => doc.querySelector(selector)).firstOrNull;
     if (content == null) {
       logger.i("GET $url ERROR");
       logger.i(html);
