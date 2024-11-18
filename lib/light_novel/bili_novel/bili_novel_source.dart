@@ -25,7 +25,7 @@ class BiliNovelSource implements LightNovelSource {
 
   static final String cookie = "night=0";
 
-  static final Scheduler _scheduler = Scheduler(45, Duration(minutes: 1));
+  static final Scheduler _scheduler = Scheduler(15, Duration(minutes: 1));
   static final Scheduler _imageScheduler = Scheduler(10, Duration(seconds: 1));
 
   @override
