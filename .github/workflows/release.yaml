@@ -127,6 +127,3 @@ jobs:
           artifacts: /tmp/artifacts/final/*
           artifactErrorsFailBuild: true
           replacesArtifacts: true
-          makeLatest: true
-          draft: true
-          updateOnlyUnreleased: true
