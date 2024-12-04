@@ -108,7 +108,7 @@ jobs:
           mkdir -p /tmp/artifacts/final
           mv /tmp/artifacts/release-Windows/*-windows.exe /tmp/artifacts/final/
           mv /tmp/artifacts/release-Linux/*-linux /tmp/artifacts/final/
-          mv /tmp/artifacts/release-Macos/*-macos /tmp/artifacts/final/
+          mv /tmp/artifacts/release-MacOS/*-macos /tmp/artifacts/final/
 
           cd /tmp/artifacts/final
           for file in *; do
