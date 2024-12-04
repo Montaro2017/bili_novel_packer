@@ -16,15 +16,15 @@ jobs:
           - target: Windows
             os: windows-latest
             artifact_name: release-Windows
-            artifact_path: build/*-windows.exe
+            artifact_path: ./*-windows.exe
           - target: Linux
             os: ubuntu-latest
             artifact_name: release-Linux
-            artifact_path: build/*-linux
+            artifact_path: ./*-linux
           - target: MacOS
             os: macos-latest
             artifact_name: release-MacOS
-            artifact_path: build/*-macos
+            artifact_path: ./*-macos
     outputs:
       version: ${{ steps.get_version.outputs.version }}
       date: ${{ steps.get_version.outputs.date}}
@@ -63,19 +63,19 @@ jobs:
       - name: Build MacOS
         if: matrix.target == 'MacOS'
         run: |
-          dart compile exe bin/main.dart -o build/bili_novel_packer-${{ steps.get_version.outputs.version }}-arm64-macos
+          dart compile exe bin/main.dart -o ./bili_novel_packer-${{ steps.get_version.outputs.version }}-arm64-macos
 
       # Build Windows
       - name: Build Windows
         if: matrix.target == 'Windows'
         run: |
-          dart compile exe bin/main.dart -o build/bili_novel_packer-${{ steps.get_version.outputs.version }}-x86_64-windows.exe
+          dart compile exe bin/main.dart -o ./bili_novel_packer-${{ steps.get_version.outputs.version }}-x86_64-windows.exe
 
       # Build Linux .deb
       - name: Build Linux
         if: matrix.target == 'Linux'
         run: |
-          dart compile exe bin/main.dart -o build/bili_novel_packer-${{ steps.get_version.outputs.version }}-x86_64-linux
+          dart compile exe bin/main.dart -o ./bili_novel_packer-${{ steps.get_version.outputs.version }}-x86_64-linux
 
       # Upload Artifacts
       - name: Upload Artifacts
