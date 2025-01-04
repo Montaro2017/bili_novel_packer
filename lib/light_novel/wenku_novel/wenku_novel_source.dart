@@ -29,7 +29,7 @@ class WenkuNovelSource implements LightNovelSource {
 
   static final Lock lock = Lock();
 
-  static final Scheduler _scheduler = Scheduler.unlimited();
+  static final Scheduler _scheduler = Scheduler(25, Duration(minutes: 1));
 
   @override
   Future<Novel> getNovel(String url) async {
@@ -107,7 +107,12 @@ class WenkuNovelSource implements LightNovelSource {
           "$prefix/$href",
           volume,
         );
-        volume.chapters.add(chapter);
+        // 将插图移动至最前面
+        if (chapter.chapterName == "插图") {
+          volume.chapters.insert(0, chapter);
+        } else {
+          volume.chapters.add(chapter);
+        }
       }
     }
     if (volume != null) {
@@ -138,15 +143,19 @@ class WenkuNovelSource implements LightNovelSource {
       },
     );
     var doc = parse(html);
+    var outerHtml = doc.outerHtml;
+    if (outerHtml.contains("Cloudflare") && outerHtml.contains("Ray ID")) {
+      throw Exception("Cloudflare Error");
+    }
     var content = doc.querySelector("#content");
-    if (content == null && doc.outerHtml.contains("Cloudflare")) {
+    if (content == null) {
       logger.i("GET $url ERROR");
       logger.i(html);
-      throw Exception("Cloudflare Error ");
+      throw "运行出错，请提交Issues并上传日志文件($logFilePath)，下次运行会清空日志。";
     } else {
       logger.i("GET $url OK");
     }
-    HTMLUtil.removeElements(content!.querySelectorAll("#contentdp"));
+    HTMLUtil.removeElements(content.querySelectorAll("#contentdp"));
     HTMLUtil.removeElements(content.querySelectorAll("br"));
     return _wrapDocument(content);
   }
