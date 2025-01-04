@@ -273,9 +273,14 @@ class BiliNovelSource implements LightNovelSource {
     HTMLUtil.removeElements(content.querySelectorAll("script"));
     HTMLUtil.removeElements(content.querySelectorAll(".tp"));
     HTMLUtil.removeElements(content.querySelectorAll(".bd"));
+    HTMLUtil.removeElements(content.querySelectorAll("e2245"));
     _replaceSecretText(content);
 
-    if (html.contains('font-family: "read"')) {
+    if (html.contains("last") &&
+        html.contains("read") &&
+        html.contains("woff2") &&
+        html.contains("font") &&
+        html.contains("sheet")) {
       _replaceFontSecretText(content);
     }
 
