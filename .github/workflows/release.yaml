@@ -1,0 +1,129 @@
+name: Build & Release
+
+# Trigger on push to master branch or with a tag
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  Build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: Windows
+            os: windows-latest
+            artifact_name: release-Windows
+            artifact_path: ./*-windows.exe
+          - target: Linux
+            os: ubuntu-latest
+            artifact_name: release-Linux
+            artifact_path: ./*-linux
+          - target: MacOS
+            os: macos-latest
+            artifact_name: release-MacOS
+            artifact_path: ./*-macos
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+      date: ${{ steps.get_version.outputs.date}}
+    runs-on: ${{ matrix.os }}
+    env:
+      FLUTTER_VERSION: 3.24.5
+    steps:
+      # Checkout branch
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Setup Flutter
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2.16.0
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: true
+
+      # Flutter Pub Get
+      - name: Flutter Pub Get
+        run: |
+          git config --global core.longpaths true
+          flutter doctor -v
+          flutter pub get
+
+      # Get app version
+      - name: Get app version
+        id: get_version
+        shell: bash
+        run: |
+          echo "version=$(head -n 3 pubspec.yaml | tail -n 1 | cut -d ' ' -f 2)" >> $GITHUB_OUTPUT
+          echo "date=$(date +%Y-%m-%d)" >> $GITHUB_OUTPUT
+
+      # Build MacOS
+      - name: Build MacOS
+        if: matrix.target == 'MacOS'
+        run: |
+          dart compile exe bin/main.dart -o ./bili_novel_packer-${{ steps.get_version.outputs.version }}-arm64-macos
+
+      # Build Windows
+      - name: Build Windows
+        if: matrix.target == 'Windows'
+        run: |
+          dart compile exe bin/main.dart -o ./bili_novel_packer-${{ steps.get_version.outputs.version }}-x86_64-windows.exe
+
+      # Build Linux .deb
+      - name: Build Linux
+        if: matrix.target == 'Linux'
+        run: |
+          dart compile exe bin/main.dart -o ./bili_novel_packer-${{ steps.get_version.outputs.version }}-x86_64-linux
+
+      # Upload Artifacts
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_path }}
+
+  Publish:
+    if: startsWith(github.ref, 'refs/tags/')
+    name: Publish
+    needs: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Get app version
+        id: get_version
+        shell: bash
+        run: |
+          echo "version=$(head -n 3 pubspec.yaml | tail -n 1 | cut -d ' ' -f 2)" >> $GITHUB_OUTPUT
+      - name: Make tmp dir
+        run: mkdir /tmp/artifacts
+      - name: Download all Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/artifacts
+      - name: List and move all Artifacts
+        run: |
+          mkdir -p /tmp/artifacts/final
+          mv /tmp/artifacts/release-Windows/*-windows.exe /tmp/artifacts/final/
+          mv /tmp/artifacts/release-Linux/*-linux /tmp/artifacts/final/
+          mv /tmp/artifacts/release-MacOS/*-macos /tmp/artifacts/final/
+
+          cd /tmp/artifacts/final
+          for file in *; do
+            if [ -f "$file" ]; then
+              sha256sum "$file" | awk '{ print $1 }' > "$file.sha256"
+            fi
+          done
+          ls -R /tmp/artifacts/final
+
+      - name: Upload to release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ github.ref_name }}
+          allowUpdates: true
+          generateReleaseNotes: true
+          artifacts: /tmp/artifacts/final/*
+          artifactErrorsFailBuild: true
+          replacesArtifacts: true
