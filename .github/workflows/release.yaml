@@ -127,3 +127,4 @@ jobs:
           artifacts: /tmp/artifacts/final/*
           artifactErrorsFailBuild: true
           replacesArtifacts: true
+          prerelease: true
