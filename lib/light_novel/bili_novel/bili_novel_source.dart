@@ -273,7 +273,7 @@ class BiliNovelSource implements LightNovelSource {
     HTMLUtil.removeElements(content.querySelectorAll("script"));
     HTMLUtil.removeElements(content.querySelectorAll(".tp"));
     HTMLUtil.removeElements(content.querySelectorAll(".bd"));
-    HTMLUtil.removeElements(content.querySelectorAll("e2245"));
+    HTMLUtil.removeElementsByPattern(content, r"[a-z]\d{4}");
     _replaceSecretText(content);
 
     if (html.contains("last") &&

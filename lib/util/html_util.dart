@@ -32,4 +32,34 @@ class HTMLUtil {
     }
     element.remove();
   }
+
+  static void removeElementsByPattern(
+    Element element,
+    String pattern, {
+    bool matchId = false,
+    bool matchTagName = true,
+    bool matchClassName = false,
+  }) {
+    String id = element.id;
+    String tagName = element.localName ?? '';
+    String className = element.className;
+    RegExp regExp = RegExp(pattern);
+    if (matchId && regExp.hasMatch(id)) {
+      element.remove();
+      return;
+    }
+    if (matchTagName && regExp.hasMatch(tagName)) {
+      element.remove();
+      return;
+    }
+    if (matchClassName && regExp.hasMatch(className)) {
+      element.remove();
+      return;
+    }
+    if (element.children.isNotEmpty) {
+      for (var e in element.children) {
+        removeElementsByPattern(e, pattern);
+      }
+    }
+  }
 }
