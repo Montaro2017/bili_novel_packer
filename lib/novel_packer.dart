@@ -270,6 +270,7 @@ class NovelPacker {
     if (src == null || src.isEmpty) {
       return null;
     }
+    print(src);
     Uint8List imageData = await _getSingleImage(src);
     if (imageData.isEmpty) {
       print("$src 图片下载失败");
@@ -283,7 +284,6 @@ class NovelPacker {
     EpubPacker packer,
     LightNovelCoverDetector coverDetector,
   ) async {
-    // 优先使用目录中的封面 否则自动检测
     if (volume.cover != null) {
       Uint8List coverData =
           await _getSingleImage(volume.cover!).catchError((e) {
@@ -292,12 +292,11 @@ class NovelPacker {
       String coverName =
           "images/${_imageSequence.next.toString().padLeft(6, '0')}.jpg";
       packer.addImage(name: "OEBPS/$coverName", data: coverData);
-      packer.cover = coverName;
-    } else {
-      String? cover = coverDetector.detectCover();
-      if (cover != null) {
-        packer.cover = cover.replaceFirst("OEBPS/", "");
-      }
+      coverDetector.add("OEBPS/$coverName", coverData, 0);
+    }
+    String? cover = coverDetector.detectCover();
+    if (cover != null) {
+      packer.cover = cover.replaceFirst("OEBPS/", "");
     }
   }
 
@@ -326,7 +325,7 @@ class NovelPacker {
     return name.trim();
   }
 
-  // 添加title元素
+  /// 添加title元素
   _addTitle(Document document, String title) {
     var element = document.createElement("title");
     element.text = title;

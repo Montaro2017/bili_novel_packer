@@ -77,7 +77,7 @@ class EpubPacker {
   void addArchiveFile(ArchiveFile archiveFile, [int? index]) {
     if (!_existArchiveFile(archiveFile)) {
       if (index != null) {
-        archiveFiles.insert(0, archiveFile);
+        archiveFiles.insert(index, archiveFile);
       } else {
         archiveFiles.add(archiveFile);
       }
@@ -192,7 +192,7 @@ class EpubPacker {
       ),
     );
     final ZipFileEncoder zip = ZipFileEncoder();
-    zip.create(epubFilePath, level: Deflate.NO_COMPRESSION);
+    zip.create(epubFilePath, level: DeflateLevel.none);
     for (var archiveFile in archiveFiles) {
       zip.addArchiveFile(archiveFile);
     }

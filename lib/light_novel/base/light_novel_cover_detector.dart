@@ -1,116 +1,110 @@
 import 'dart:typed_data';
 
-import 'package:archive/archive.dart';
-import 'package:bili_novel_packer/media_type.dart';
+import 'package:bili_novel_packer/novel_packer.dart';
+import 'package:image/image.dart' as img;
 
 class LightNovelCoverDetector {
   // 最佳封面图片比率
   static final double coverRatio = 3 / 4;
 
-  final Map<String, ImageInfo> _imageInfoMap = {};
+  final List<Pair<String, ImageInfo>> _imageList = [];
 
-  void add(String name, Uint8List imageData) {
-    ImageInfo imageInfo = _getImageInfo(InputStream(imageData));
-    _imageInfoMap[name] = imageInfo;
+  void add(String name, Uint8List imageData, [int? index]) {
+    ImageInfo imageInfo = getImageInfo(imageData);
+    // 过滤掉宽图
+    if (imageInfo.ratio >= 1) {
+      return;
+    }
+    if (index != null) {
+      _imageList.insert(index, Pair(name, imageInfo));
+    } else {
+      _imageList.add(Pair(name, imageInfo));
+    }
   }
 
   String? detectCover() {
-    if (_imageInfoMap.isEmpty) {
+    if (_imageList.isEmpty) {
       return null;
     }
-    for (var entry in _imageInfoMap.entries) {
-      if (entry.value.ratio < 1) {
-        return entry.key;
+    List<Pair<String, ImageInfo>> list = [];
+    for (Pair<String, ImageInfo> pair in _imageList) {
+      ImageInfo imageInfo = pair.v2;
+      if (imageInfo.ratio < 1) {
+        if (imageInfo.colorful) {
+          return pair.v1;
+        }
+        list.add(pair);
       }
     }
-    return _imageInfoMap.keys.first;
+    if (list.isNotEmpty) {
+      return list.first.v1;
+    }
+    return _imageList.first.v1;
   }
 }
 
 class ImageInfo {
   int width;
   int height;
+  bool colorful;
   String mimeType;
 
-  ImageInfo(this.width, this.height, this.mimeType);
+  ImageInfo(this.width, this.height, this.mimeType, [this.colorful = false]);
 
   double get ratio => width / height;
 
   @override
   String toString() {
-    return "ImageInfo(width = $width, height = $height, ratio = $ratio, mimeType = $mimeType)";
+    return "ImageInfo(width = $width, height = $height, colorful = $colorful, ratio = $ratio, mimeType = $mimeType)";
   }
 }
 
-ImageInfo _getImageInfo(InputStreamBase isb) {
-  int width;
-  int height;
-  String mimeType;
-  int c1 = isb.readByte();
-  int c2 = isb.readByte();
-  int c3 = isb.readByte();
-  // GIF
-  if (c1 == 0x47 && c2 == 0x49 && c3 == 0x46) {
-    isb.skip(3);
-    width = isb.readUint16();
-    height = isb.readUint16();
-    mimeType = gif;
-    return ImageInfo(width, height, mimeType);
+ImageInfo getImageInfo(Uint8List imgData) {
+  img.Decoder? decoder = img.findDecoderForData(imgData);
+  if (decoder == null) {
+    throw UnsupportedImageException("不支持的图片类型");
   }
-  // JPG
-  if (c1 == 0xFF && c2 == 0xD8) {
-    while (c3 == 255) {
-      int marker = isb.readByte();
-      int len = _readInt(isb, 2, true);
-      if (marker == 192 || marker == 193 || marker == 194) {
-        isb.skip(1);
-        height = _readInt(isb, 2, true);
-        width = _readInt(isb, 2, true);
-        mimeType = jpeg;
-        return ImageInfo(width, height, mimeType);
+  img.Image? image = decoder.decode(imgData);
+  if (image == null) {
+    throw UnsupportedImageException("不支持的图片类型");
+  }
+  int width = image.width;
+  int height = image.height;
+  String mimeType = "image/${decoder.format.name.toLowerCase()}";
+  bool colorful = _isColorful(image);
+  return ImageInfo(width, height, mimeType, colorful);
+}
+
+/// 判断图片是否是黑白的
+bool _isColorful(img.Image image, {int tolerance = 5}) {
+  int width = image.width;
+  int height = image.height;
+  // 降采样 颜色量化
+  int rx = 100;
+  int ry = 100;
+  // int bitShift = 4;
+  int xStep = (width / (rx + 1)).ceil();
+  int yStep = (height / (ry + 1)).ceil();
+
+  int totalSampled = 0;
+  int validGrayPixels = 0;
+
+  for (int x = xStep; x < width; x = x + xStep) {
+    for (int y = yStep; y < height; y = y + yStep) {
+      img.Pixel p = image.getPixel(x, y);
+      final r = p.r.toInt();
+      final g = p.g.toInt();
+      final b = p.b.toInt();
+      final maxDiff = [r - g, r - b, g - b]
+          .map((diff) => diff.abs())
+          .reduce((a, b) => a > b ? a : b);
+      if (maxDiff <= tolerance) {
+        validGrayPixels++;
       }
-      isb.skip(len - 2);
-      c3 = isb.readByte();
+      totalSampled++;
     }
   }
-  // PNG
-  if (c1 == 137 && c2 == 80 && c3 == 78) {
-    isb.skip(15);
-    width = _readInt(isb, 2, true);
-    isb.skip(2);
-    height = _readInt(isb, 2, true);
-    mimeType = png;
-    return ImageInfo(width, height, mimeType);
-  }
-  // BMP
-  if (c1 == 66 && c2 == 77) {
-    isb.skip(15);
-    width = _readInt(isb, 2, false);
-    isb.skip(2);
-    height = _readInt(isb, 2, false);
-    mimeType = bmp;
-    return ImageInfo(width, height, mimeType);
-  }
-  // WEBP
-  if (c1 == 0x52 && c2 == 0x49 && c3 == 0x46) {
-    var bytes = isb.readBytes(27).toUint8List();
-    width = (bytes[24] & 0xFF) << 8 | (bytes[23] & 0xFF);
-    height = (bytes[26] & 0xFF) << 8 | (bytes[25] & 0xFF);
-    mimeType = webp;
-    return ImageInfo(width, height, mimeType);
-  }
-  throw UnsupportedImageException("不支持的图片类型");
-}
-
-int _readInt(InputStreamBase isb, int count, bool bigEndian) {
-  int ret = 0;
-  int sv = bigEndian ? ((count - 1) * 8) : 0;
-  int cnt = bigEndian ? -8 : 8;
-  for (int i = 0; i < count; i++) {
-    ret |= isb.readByte() << sv;
-    sv += cnt;
-  }
-  return ret;
+  return (validGrayPixels / totalSampled) <= 0.2;
 }
 
 class UnsupportedImageException implements Exception {
