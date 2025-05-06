@@ -65,9 +65,6 @@ class NovelPacker {
   }
 
   Future<void> pack(PackArgument arg) async {
-    if (lightNovelSource is BiliNovelSource) {
-      await BiliNovelSource.init();
-    }
     if (!arg.combineVolume) {
       for (var volume in arg.packVolumes) {
         logger.i("开始打包 ${volume.catalog.novel.title} ${volume.volumeName}");
