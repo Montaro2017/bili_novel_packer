@@ -387,8 +387,7 @@ class BiliNovelSource implements LightNovelSource {
         "Accept-Language": "zh-CN,zh;q=0.9",
         "Cookie": cookie
       });
-      if (html.contains("error code") ||
-          html.contains("Cloudflare to restrict access") ||
+      if (html.contains("Cloudflare to restrict access") ||
           html.contains("503 Service Temporarily Unavailable")) {
         c.pause();
         await Future.delayed(Duration(seconds: 10));
