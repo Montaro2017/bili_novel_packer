@@ -75,7 +75,7 @@ class NovelPacker {
       }
     } else {
       // 合并分卷
-      String title = _sanitizeFileName(novel.title);
+      String title = sanitizeFileName(novel.title);
       String path = "$title${Platform.pathSeparator}$title.epub";
       logger.i("EPUB file: $path");
       await _combineVolume(path, arg);
@@ -298,15 +298,15 @@ class NovelPacker {
   }
 
   String _getEpubName(Volume volume) {
-    String title = _sanitizeFileName(volume.catalog.novel.title);
-    String volumeName = _sanitizeFileName(volume.volumeName);
+    String title = sanitizeFileName(volume.catalog.novel.title);
+    String volumeName = sanitizeFileName(volume.volumeName);
     if (volumeName == "") {
       return "$title${Platform.pathSeparator}$title.epub";
     }
     return "$title${Platform.pathSeparator}$title $volumeName.epub";
   }
 
-  String _sanitizeFileName(String name) {
+  static String sanitizeFileName(String name) {
     var keywords = {":", "*", "?", "\"", "\\", "/", "<", ">", "|", "\\0", "　"};
     for (var keyword in keywords) {
       name = name.replaceAll(keyword, " ");

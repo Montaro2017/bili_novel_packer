@@ -76,21 +76,19 @@ ImageInfo getImageInfo(Uint8List imgData) {
 }
 
 /// 判断图片是否是黑白的
-bool _isColorful(img.Image image, {int tolerance = 5}) {
+bool _isColorful(
+  img.Image image, {
+  int tolerance = 5,
+  double allowPercentage = 0.8,
+}) {
   int width = image.width;
   int height = image.height;
-  // 降采样 颜色量化
-  int rx = 100;
-  int ry = 100;
-  // int bitShift = 4;
-  int xStep = (width / (rx + 1)).ceil();
-  int yStep = (height / (ry + 1)).ceil();
 
   int totalSampled = 0;
   int validGrayPixels = 0;
 
-  for (int x = xStep; x < width; x = x + xStep) {
-    for (int y = yStep; y < height; y = y + yStep) {
+  for (int x = 0; x < width; x++) {
+    for (int y = 0; y < height; y++) {
       img.Pixel p = image.getPixel(x, y);
       final r = p.r.toInt();
       final g = p.g.toInt();
@@ -104,7 +102,9 @@ bool _isColorful(img.Image image, {int tolerance = 5}) {
       totalSampled++;
     }
   }
-  return (validGrayPixels / totalSampled) <= 0.2;
+  double percentage = (validGrayPixels / totalSampled);
+  print("${(percentage * 100).toStringAsFixed(2)}%");
+  return percentage <= allowPercentage;
 }
 
 class UnsupportedImageException implements Exception {
