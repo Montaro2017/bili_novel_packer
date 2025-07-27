@@ -30,7 +30,7 @@ jobs:
       date: ${{ steps.get_version.outputs.date}}
     runs-on: ${{ matrix.os }}
     env:
-      FLUTTER_VERSION: 3.24.5
+      FLUTTER_VERSION: 3.32.8
     steps:
       # Checkout branch
       - name: Checkout
@@ -71,11 +71,12 @@ jobs:
         run: |
           dart compile exe bin/main.dart -o ./bili_novel_packer-${{ steps.get_version.outputs.version }}-x86_64-windows.exe
 
-      # Build Linux .deb
+      # Build Linux
       - name: Build Linux
         if: matrix.target == 'Linux'
         run: |
-          dart compile exe bin/main.dart -o ./bili_novel_packer-${{ steps.get_version.outputs.version }}-x86_64-linux
+          dart compile exe --target-os=linux --target-arch=x64 --output=./bili_novel_packer-${{ steps.get_version.outputs.version }}-x86_64-linux ./bin/main.dart
+          dart compile exe --target-os=linux --target-arch=arm64 --output=./bili_novel_packer-${{ steps.get_version.outputs.version }}-arm64-linux ./bin/main.dart
 
       # Upload Artifacts
       - name: Upload Artifacts
@@ -109,13 +110,6 @@ jobs:
           mv /tmp/artifacts/release-Windows/*-windows.exe /tmp/artifacts/final/
           mv /tmp/artifacts/release-Linux/*-linux /tmp/artifacts/final/
           mv /tmp/artifacts/release-MacOS/*-macos /tmp/artifacts/final/
-
-          cd /tmp/artifacts/final
-          for file in *; do
-            if [ -f "$file" ]; then
-              sha256sum "$file" | awk '{ print $1 }' > "$file.sha256"
-            fi
-          done
           ls -R /tmp/artifacts/final
 
       - name: Upload to release
