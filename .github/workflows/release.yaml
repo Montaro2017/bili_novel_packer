@@ -76,7 +76,8 @@ jobs:
         if: matrix.target == 'Linux'
         run: |
           dart compile exe --target-os=linux --target-arch=x64 --output=./bili_novel_packer-${{ steps.get_version.outputs.version }}-x86_64-linux ./bin/main.dart
-          dart compile exe --target-os=linux --target-arch=arm64 --output=./bili_novel_packer-${{ steps.get_version.outputs.version }}-aarch64-linux ./bin/main.dart
+          dart compile exe --target-os=linux --target-arch=arm64 --output=./bili_novel_packer-${{ steps.get_version.outputs.version }}-arm64-linux ./bin/main.dart
+          dart compile exe --target-os=linux --target-arch=riscv64 --output=./bili_novel_packer-${{ steps.get_version.outputs.version }}-riscv64-linux ./bin/main.dart
 
       # Upload Artifacts
       - name: Upload Artifacts
