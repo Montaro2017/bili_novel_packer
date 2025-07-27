@@ -4,7 +4,6 @@ import 'dart:typed_data';
 
 import 'package:bili_novel_packer/light_novel/base/light_novel_model.dart';
 import 'package:bili_novel_packer/light_novel/base/light_novel_source.dart';
-import 'package:bili_novel_packer/light_novel/bili_novel/bili_font_secret.dart';
 import 'package:bili_novel_packer/light_novel/bili_novel/bili_novel_secret.dart';
 import 'package:bili_novel_packer/log.dart';
 import 'package:bili_novel_packer/scheduler/scheduler.dart';
@@ -274,14 +273,12 @@ class BiliNovelSource implements LightNovelSource {
     HTMLUtil.removeElements(content.querySelectorAll(".tp"));
     HTMLUtil.removeElements(content.querySelectorAll(".bd"));
     HTMLUtil.removeElementsByPattern(content, r"[a-z]\d{4}");
-    _replaceSecretText(content);
 
-    if (html.contains("last") &&
-        html.contains("read") &&
-        html.contains("woff2") &&
-        html.contains("font") &&
-        html.contains("sheet")) {
-      _replaceFontSecretText(content);
+    if (_shouldShuffle(doc)) {
+      int? chapterId = int.tryParse(
+          RegExp("chapterid:'(\\d+)'").firstMatch(doc.outerHtml)?.group(1) ??
+              '');
+      _shuffle(content, chapterId);
     }
 
     return ChapterPage(
@@ -294,38 +291,71 @@ class BiliNovelSource implements LightNovelSource {
     );
   }
 
-  _replaceFontSecretText(Element content) {
-    List<Element> ps = content.querySelectorAll("p");
-    // ISSUES#29
-    if (ps.isEmpty) {
-      return;
-    }
-    Element lastP = ps.last;
-    String text = lastP.text;
-
-    StringBuffer sb = StringBuffer();
-    for (var i = 0; i < text.length; i++) {
-      String beforeChar = text[i];
-      if (blankUnicode.contains(beforeChar)) {
-        continue;
-      }
-      String? replacement = fontSecretMap[beforeChar];
-      String t = replacement ?? beforeChar;
-      sb.write(t);
-    }
-    lastP.text = sb.toString();
+  _shouldShuffle(Document doc) {
+    var script = doc
+        .querySelectorAll("script")
+        .where((s) => s.attributes["src"]?.contains("chapterlog.js?v") ?? false)
+        .firstOrNull;
+    return script != null;
   }
 
-  /// 替换加密字体对应文字
-  _replaceSecretText(Element element) {
-    String str = element.innerHtml;
-    StringBuffer sb = StringBuffer();
-    for (var i = 0; i < str.length; i++) {
-      String beforeChar = str[i];
-      String? replacement = secretMap[beforeChar];
-      sb.write(replacement ?? beforeChar);
+  _shuffle(Element content, int? chapterId) {
+    if (chapterId == null) {
+      return;
     }
-    element.innerHtml = sb.toString();
+    var pElements = content
+        .querySelectorAll("p")
+        .where((p) => p.text.trim().isNotEmpty)
+        .toList();
+    var paragraphs = [];
+    for (var i = 0; i < pElements.length; i++) {
+      var node = pElements[i];
+      paragraphs.add(node);
+    }
+
+    if (paragraphs.isEmpty) {
+      return;
+    }
+    var nodes = content.children;
+
+    var indices = [];
+    List<int> fixed = [];
+    List<int> shuffled = [];
+
+    for (var i = 0; i < paragraphs.length; i++) {
+      i < 0x14 ? fixed.add(i) : shuffled.add(i);
+    }
+
+    if (paragraphs.length > 0x14) {
+      var seed = chapterId * 0x89 + 0xe9;
+      _shuffleArr(shuffled, seed);
+      indices = [...fixed, ...shuffled];
+    } else {
+      indices = [...fixed];
+    }
+
+    List<Element> mapped = List.filled(paragraphs.length, Element.tag("p"));
+    for (var i = 0; i < paragraphs.length; i++) {
+      mapped[indices[i]] = paragraphs[i];
+    }
+    var replacedIndex = 0;
+    for (var i = 0; i < nodes.length; i++) {
+      var node = nodes[i];
+      if (node.localName == 'p' && node.text.trim().isNotEmpty) {
+        content.children[i] = mapped[replacedIndex++].clone(true);
+      }
+    }
+  }
+
+  _shuffleArr(List<int> arr, int seed) {
+    for (int i = arr.length - 1; i > 0; i--) {
+      seed = (seed * 0x2455 + 0xc091) % 0x38f40;
+      int j = (seed / 0x38f40 * (i + 1)).floor();
+      int tmp = arr[i];
+      arr[i] = arr[j];
+      arr[j] = tmp;
+    }
+    return arr;
   }
 
   _replaceImageSrc(Element element) {
