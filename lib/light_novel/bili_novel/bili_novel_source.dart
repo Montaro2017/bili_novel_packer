@@ -323,10 +323,10 @@ class BiliNovelSource implements LightNovelSource {
     List<int> shuffled = [];
 
     for (var i = 0; i < paragraphs.length; i++) {
-      i < 0x14 ? fixed.add(i) : shuffled.add(i);
+      i < 0x13 ? fixed.add(i) : shuffled.add(i);
     }
 
-    if (paragraphs.length > 0x14) {
+    if (paragraphs.length > 0x13) {
       var seed = chapterId * 0x89 + 0xe9;
       _shuffleArr(shuffled, seed);
       indices = [...fixed, ...shuffled];
