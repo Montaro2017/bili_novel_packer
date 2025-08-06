@@ -37,6 +37,22 @@ void main() {
       print(_sanitizeFileName(filename));
     }
   });
+
+  test("eval", () {
+    int result = _eval("0x184d+0x19af+-0x31e8");
+    print(result);
+  });
+}
+
+int _eval(String expression) {
+  List<String> hexNums = expression.split("+");
+  int result = 0;
+  for (var n in hexNums) {
+    n = n.replaceFirst("0x", "");
+    int num = int.parse(n, radix: 16);
+    result += num;
+  }
+  return result;
 }
 
 String _sanitizeFileName(String name) {

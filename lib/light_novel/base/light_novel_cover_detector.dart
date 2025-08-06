@@ -99,7 +99,9 @@ ImageInfo _getImageInfo(InputStreamBase isb) {
     mimeType = webp;
     return ImageInfo(width, height, mimeType);
   }
-  throw UnsupportedImageException("不支持的图片类型");
+
+  String head = "0x${c1.toRadixString(16)} 0x${c2.toRadixString(16)} 0x${c3.toRadixString(16)}";
+  throw UnsupportedImageException("不支持的图片类型($head)");
 }
 
 int _readInt(InputStreamBase isb, int count, bool bigEndian) {
