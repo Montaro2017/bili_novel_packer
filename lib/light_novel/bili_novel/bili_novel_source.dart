@@ -25,8 +25,8 @@ class BiliNovelSource implements LightNovelSource {
 
   static final String cookie = "night=0";
 
-  static int? cachedFixedLength;
   static Lock lock = Lock();
+  static bool warnFlag = false;
 
   static final Scheduler _scheduler = Scheduler(15, Duration(minutes: 1));
   static final Scheduler _imageScheduler = Scheduler(10, Duration(seconds: 1));
@@ -280,7 +280,7 @@ class BiliNovelSource implements LightNovelSource {
 
     Map<String, int>? params = await _getShuffleParams(doc);
     if (params != null) {
-      _shuffle(content, params["chapterId"]!, params["fixedLength"]!);
+      _shuffle(content, params);
     }
 
     return ChapterPage(
@@ -306,56 +306,29 @@ class BiliNovelSource implements LightNovelSource {
       int? chapterId = int.tryParse(
         RegExp("chapterid:'(\\d+)'").firstMatch(doc.outerHtml)?.group(1) ?? '',
       );
+      String jsSrc = script.attributes["src"]!;
+      String currentVersion = "v1006b4";
+      String matchedVersion = jsSrc.substring(jsSrc.lastIndexOf("v"));
+      if (currentVersion != matchedVersion && !warnFlag) {
+        print(
+            "[警告]: chapterlog版本号不匹配，当前版本: $currentVersion, 实际版本: $matchedVersion, 可能导致章节内容顺序错乱");
+        warnFlag = true;
+      }
+
       if (chapterId == null) {
         return null;
       }
-      if (cachedFixedLength != null) {
-        return {
-          "chapterId": chapterId,
-          "fixedLength": cachedFixedLength!,
-        };
-      }
-      String src = script.attributes["src"]!;
-      String js = await httpGetString(
-        src,
-        headers: {
-          "User-Agent": userAgent,
-          "Accept": "*/*",
-          "Accept-Language": "zh-CN,zh;q=0.9",
-          "Cookie": cookie
-        },
-      );
-      String? expression = RegExp(
-        "if\\(!_0x[a-z0-9]{6}\\)\\s?return;var _0x[a-z0-9]{6}=(0x[a-z0-9]+(?:\\+-?0x[a-z0-9]+)*)",
-      ).firstMatch(js)?.group(1);
-      if (expression == null) {
-        return null;
-      }
-      cachedFixedLength = _eval(expression);
       return {
-        "chapterId": chapterId,
-        "fixedLength": cachedFixedLength!,
+        "fixedLength": 20,
+        "seed": chapterId * 135 + 236,
+        "a": 9302,
+        "c": 49397,
+        "mod": 233280
       };
     });
   }
 
-  int _eval(String expression) {
-    List<String> hexNums = expression.split("+");
-    int result = 0;
-    for (var n in hexNums) {
-      int num;
-      if (n.startsWith("0x")) {
-        n = n.replaceFirst("0x", "");
-        num = int.parse(n, radix: 16);
-      } else {
-        num = int.parse(n);
-      }
-      result += num;
-    }
-    return result;
-  }
-
-  _shuffle(Element content, int chapterId, int fixedLength) {
+  _shuffle(Element content, Map<String, int> shuffleParams) {
     var pElements = content
         .querySelectorAll("p")
         .where((p) => p.text.trim().isNotEmpty)
@@ -375,13 +348,13 @@ class BiliNovelSource implements LightNovelSource {
     List<int> fixed = [];
     List<int> shuffled = [];
 
+    int fixedLength = shuffleParams["fixedLength"]!;
     for (var i = 0; i < paragraphs.length; i++) {
       i < fixedLength ? fixed.add(i) : shuffled.add(i);
     }
 
     if (paragraphs.length > fixedLength) {
-      var seed = chapterId * 0x89 + 0xe9;
-      _shuffleArr(shuffled, seed);
+      _shuffleArr(shuffled, shuffleParams);
       indices = [...fixed, ...shuffled];
     } else {
       indices = [...fixed];
@@ -400,10 +373,11 @@ class BiliNovelSource implements LightNovelSource {
     }
   }
 
-  _shuffleArr(List<int> arr, int seed) {
-    const a = 9302;
-    const c = 49397;
-    const mod = 233280;
+  _shuffleArr(List<int> arr, Map<String, int> shuffleParams) {
+    int a = shuffleParams["a"]!;
+    int c = shuffleParams["c"]!;
+    int mod = shuffleParams["mod"]!;
+    int seed = shuffleParams["seed"]!;
     for (int i = arr.length - 1; i > 0; i--) {
       seed = (seed * a + c) % mod;
       int j = (seed / mod * (i + 1)).floor();
