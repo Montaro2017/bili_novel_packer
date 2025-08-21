@@ -88,39 +88,33 @@ class BiliNovelSource implements LightNovelSource {
     var doc = parse(await httpGetString("$domain/novel/${novel.id}/catalog"));
     var catalog = Catalog(novel);
     _replaceImageSrc(doc.body!);
-    var children = doc.querySelector("#volumes")!.children;
     Volume? volume;
     // 如果没有卷标题 则将书名直接作为卷名
     if (doc.querySelector(".chapter-bar") == null) {
       volume = Volume("", catalog);
     }
-    for (var child in children) {
-      if (!child.classes.contains("catalog-volume")) {
-        continue;
-      }
-      var lis = child.querySelectorAll(".volume-chapters>li");
-      for (var li in lis) {
-        if (li.classes.contains("chapter-bar")) {
-          if (volume != null) {
-            catalog.volumes.add(volume);
-          }
-          volume = Volume(li.text, catalog);
-        } else if (li.classes.contains("volume-cover")) {
-          volume?.cover =
-              child.querySelector("a")?.querySelector("img")?.attributes["src"];
-        } else if (li.classes.contains("jsChapter")) {
-          var link = li.querySelector("a")!;
-          String name = link.text;
-          String? href = link.attributes["href"];
-          if (href == null || href.contains("javascript")) {
-            href = null;
-          } else {
-            href = "$domain$href";
-          }
-          if (volume != null) {
-            var chapter = Chapter(name, href, volume);
-            volume.chapters.add(chapter);
-          }
+    var lis = doc.querySelectorAll(".volume-chapters>li");
+    for (var li in lis) {
+      if (li.classes.contains("chapter-bar")) {
+        if (volume != null) {
+          catalog.volumes.add(volume);
+        }
+        volume = Volume(li.text, catalog);
+      } else if (li.classes.contains("volume-cover")) {
+        volume?.cover =
+            li.querySelector("a")?.querySelector("img")?.attributes["src"];
+      } else if (li.classes.contains("jsChapter")) {
+        var link = li.querySelector("a")!;
+        String name = link.text;
+        String? href = link.attributes["href"];
+        if (href == null || href.contains("javascript")) {
+          href = null;
+        } else {
+          href = "$domain$href";
+        }
+        if (volume != null) {
+          var chapter = Chapter(name, href, volume);
+          volume.chapters.add(chapter);
         }
       }
     }
