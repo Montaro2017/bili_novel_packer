@@ -29,7 +29,7 @@ class WenkuNovelSource implements LightNovelSource {
 
   static final Lock lock = Lock();
 
-  static final Scheduler _scheduler = Scheduler(25, Duration(minutes: 1));
+  static final Scheduler _scheduler = Scheduler(20, Duration(minutes: 1));
 
   @override
   Future<Novel> getNovel(String url) async {
