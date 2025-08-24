@@ -37,42 +37,46 @@ class WenkuNovelSource implements LightNovelSource {
     WenkuNovel novel = WenkuNovel();
     url = "$domain/book/$id.htm";
     novel.url = url;
-    var doc = parse(
-      await _httpGet(url, headers: {
-        "User-Agent": userAgent,
-      }),
-    );
+    var html = await _httpGet(url, headers: {
+      "User-Agent": userAgent,
+    });
+    var doc = parse(html);
+    try {
+      novel.id = id.toString();
+      novel.title = doc
+          .querySelector("#content")!
+          .querySelector("table:nth-child(1)")!
+          .querySelector("span b")!
+          .text;
+      novel.coverUrl =
+          doc.querySelector("#content table img")!.attributes["src"]!;
+      List<Element> details = doc
+          .querySelector("#content table:nth-child(1)")!
+          .querySelector("tr:nth-child(2)")!
+          .querySelectorAll("td");
+      novel.status = details[2].text.replaceFirst("文章状态：", "");
+      novel.author = details[1].text.replaceFirst("小说作者：", "");
 
-    novel.id = id.toString();
-    novel.title = doc
-        .querySelector("#content")!
-        .querySelector("table:nth-child(1)")!
-        .querySelector("span b")!
-        .text;
-    novel.coverUrl =
-        doc.querySelector("#content table img")!.attributes["src"]!;
-    List<Element> details = doc
-        .querySelector("#content table:nth-child(1)")!
-        .querySelector("tr:nth-child(2)")!
-        .querySelectorAll("td");
-    novel.status = details[2].text.replaceFirst("文章状态：", "");
-    novel.author = details[1].text.replaceFirst("小说作者：", "");
+      Element td =
+          doc.querySelectorAll("#content table")[2].querySelectorAll("td")[1];
 
-    Element td =
-        doc.querySelectorAll("#content table")[2].querySelectorAll("td")[1];
+      novel.tags =
+          td.querySelector("span")!.text.replaceFirst("作品Tags：", "").split(" ");
+      novel.description = td.querySelectorAll("span").last.text;
 
-    novel.tags =
-        td.querySelector("span")!.text.replaceFirst("作品Tags：", "").split(" ");
-    novel.description = td.querySelectorAll("span").last.text;
-
-    novel.catalogUrl =
-        doc.querySelector("legend + div > a")!.attributes["href"]!;
-    if (!novel.catalogUrl.startsWith("http")) {
-      novel.catalogUrl = domain +
-          (novel.catalogUrl.startsWith("/") ? "" : "/") +
-          novel.catalogUrl;
+      novel.catalogUrl =
+          doc.querySelector("legend + div > a")!.attributes["href"]!;
+      if (!novel.catalogUrl.startsWith("http")) {
+        novel.catalogUrl = domain +
+            (novel.catalogUrl.startsWith("/") ? "" : "/") +
+            novel.catalogUrl;
+      }
+      return novel;
+    } catch (e) {
+      logger.e(e);
+      logger.i(html);
+      rethrow;
     }
-    return novel;
   }
 
   @override

@@ -69,6 +69,7 @@ class BiliNovelSource implements LightNovelSource {
       novel.description = doc.querySelector("#bookSummary content")!.text;
       return novel;
     } catch (e) {
+      logger.e(e);
       logger.i(html);
       rethrow;
     }
@@ -301,7 +302,7 @@ class BiliNovelSource implements LightNovelSource {
         RegExp("chapterid:'(\\d+)'").firstMatch(doc.outerHtml)?.group(1) ?? '',
       );
       String jsSrc = script.attributes["src"]!;
-      String currentVersion = "v1006b4";
+      String currentVersion = "v1006b6";
       String matchedVersion = jsSrc.substring(jsSrc.lastIndexOf("v"));
       if (currentVersion != matchedVersion && !warnFlag) {
         print(
@@ -314,7 +315,7 @@ class BiliNovelSource implements LightNovelSource {
       }
       return {
         "fixedLength": 20,
-        "seed": chapterId * 135 + 236,
+        "seed": chapterId * 135 + 234,
         "a": 9302,
         "c": 49397,
         "mod": 233280
