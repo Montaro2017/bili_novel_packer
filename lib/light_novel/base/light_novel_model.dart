@@ -33,7 +33,7 @@ class Novel {
   String toString() {
     StringBuffer sb = StringBuffer();
     // 处理书名和别名的拼接
-    String displayTitle = title ?? "";
+    String displayTitle = title;
     if (alias != null && alias!.isNotEmpty) {
       displayTitle += "(${alias!})";
     }
