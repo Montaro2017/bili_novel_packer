@@ -8,6 +8,9 @@ class Novel {
   // 书名
   late String title;
 
+  // 别名
+  String? alias;
+
   // 作者
   late String author;
 
@@ -29,7 +32,12 @@ class Novel {
   @override
   String toString() {
     StringBuffer sb = StringBuffer();
-    sb.writeln("书名: $title");
+    // 处理书名和别名的拼接
+    String displayTitle = title;
+    if (alias != null && alias!.isNotEmpty) {
+      displayTitle += "(${alias!})";
+    }
+    sb.writeln(displayTitle);
     sb.writeln("作者: $author");
     sb.writeln("状态: $status");
     if (tags != null && tags!.isNotEmpty) {
