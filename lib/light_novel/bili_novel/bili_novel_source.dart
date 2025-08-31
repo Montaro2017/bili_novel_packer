@@ -47,7 +47,12 @@ class BiliNovelSource implements LightNovelSource {
   Future<Novel> getNovel(String url) async {
     String id = _getId(url);
     Novel novel = Novel();
-    String html = await httpGetString("$domain/novel/$id.html");
+    String html = await httpGetString(
+      "$domain/novel/$id.html",
+      headers: {
+        "Accept-Language": " zh-CN,zh;q=0.9",
+      },
+    );
     try {
       var doc = parse(html);
       novel.id = id.toString();
@@ -86,7 +91,12 @@ class BiliNovelSource implements LightNovelSource {
   /// 获取小说目录
   @override
   Future<Catalog> getNovelCatalog(Novel novel) async {
-    var doc = parse(await httpGetString("$domain/novel/${novel.id}/catalog"));
+    var doc = parse(await httpGetString(
+      "$domain/novel/${novel.id}/catalog",
+      headers: {
+        "Accept-Language": " zh-CN,zh;q=0.9",
+      },
+    ));
     var catalog = Catalog(novel);
     _replaceImageSrc(doc.body!);
     Volume? volume;
