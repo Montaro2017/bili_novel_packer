@@ -58,6 +58,14 @@ class BiliNovelSource implements LightNovelSource {
       novel.id = id.toString();
       novel.url = url;
       novel.title = doc.querySelector(".book-title")!.text;
+      
+      // 解析别名信息
+      var backupNameElement =
+          doc.querySelector(".backupname .bkname-body.gray");
+      if (backupNameElement != null) {
+        novel.alias = backupNameElement.text.trim();
+      }
+      
       novel.coverUrl =
           doc.querySelector(".book-layout img")!.attributes["src"]!;
       novel.tags = doc
