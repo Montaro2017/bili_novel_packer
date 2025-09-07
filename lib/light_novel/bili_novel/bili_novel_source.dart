@@ -320,7 +320,7 @@ class BiliNovelSource implements LightNovelSource {
         RegExp("chapterid:'(\\d+)'").firstMatch(doc.outerHtml)?.group(1) ?? '',
       );
       String jsSrc = script.attributes["src"]!;
-      String currentVersion = "v1006b7";
+      String currentVersion = "v1006b8";
       String matchedVersion = jsSrc.substring(jsSrc.lastIndexOf("v"));
       if (currentVersion != matchedVersion && !warnFlag) {
         print(
@@ -333,7 +333,7 @@ class BiliNovelSource implements LightNovelSource {
       }
       return {
         "fixedLength": 20,
-        "seed": chapterId * 132 + 234,
+        "seed": chapterId * 132 + 237,
         "a": 9302,
         "c": 49397,
         "mod": 233280
