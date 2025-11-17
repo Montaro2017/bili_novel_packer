@@ -58,14 +58,14 @@ class BiliNovelSource implements LightNovelSource {
       novel.id = id.toString();
       novel.url = url;
       novel.title = doc.querySelector(".book-title")!.text;
-      
+
       // 解析别名信息
       var backupNameElement =
           doc.querySelector(".backupname .bkname-body.gray");
       if (backupNameElement != null) {
         novel.alias = backupNameElement.text.trim();
       }
-      
+
       novel.coverUrl =
           doc.querySelector(".book-layout img")!.attributes["src"]!;
       novel.tags = doc
@@ -99,12 +99,14 @@ class BiliNovelSource implements LightNovelSource {
   /// 获取小说目录
   @override
   Future<Catalog> getNovelCatalog(Novel novel) async {
-    var doc = parse(await httpGetString(
-      "$domain/novel/${novel.id}/catalog",
+    String url = "$domain/novel/${novel.id}/catalog";
+    String html = await httpGetString(
+      url,
       headers: {
         "Accept-Language": " zh-CN,zh;q=0.9",
       },
-    ));
+    );
+    var doc = parse(html);
     var catalog = Catalog(novel);
     _replaceImageSrc(doc.body!);
     Volume? volume;
@@ -113,6 +115,11 @@ class BiliNovelSource implements LightNovelSource {
       volume = Volume("", catalog);
     }
     var lis = doc.querySelectorAll(".volume-chapters>li");
+    if (lis.isEmpty) {
+      logger.i("GET $url");
+      logger.i(html);
+      throw "目录获取为空";
+    }
     for (var li in lis) {
       if (li.classes.contains("chapter-bar")) {
         if (volume != null) {
@@ -480,6 +487,7 @@ class BiliNovelSource implements LightNovelSource {
     if (!src.startsWith("http")) {
       src = "$domain/$src";
     }
+    src = src.replaceFirst("https://https://", "https://");
     // 处理图片url域名特殊字符 𝘣 = \ud835\ude23
     src = src.replaceAll("\ud835\ude23", "b");
     return _imageScheduler.run((_) async {
