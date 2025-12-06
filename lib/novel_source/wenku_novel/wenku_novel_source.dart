@@ -1,0 +1,215 @@
+import 'dart:async';
+import 'dart:typed_data';
+
+import 'package:bili_novel_packer/novel_source/base/cloudflare_interceptor.dart';
+import 'package:bili_novel_packer/novel_source/base/light_novel_model.dart';
+import 'package:bili_novel_packer/novel_source/base/light_novel_source.dart';
+import 'package:bili_novel_packer/novel_source/base/novel_source.dart';
+import 'package:bili_novel_packer/novel_source/wenku_novel/wenku_novel.dart';
+import 'package:bili_novel_packer/scheduler/scheduler.dart';
+import 'package:bili_novel_packer/util/html_util.dart';
+import 'package:bili_novel_packer/util/http_util.dart';
+import 'package:bili_novel_packer/util/sequence.dart';
+import 'package:gbk_codec/gbk_codec.dart';
+import 'package:dio/dio.dart';
+import 'package:html/dom.dart';
+import 'package:html/parser.dart';
+import 'package:retry/retry.dart';
+import 'package:synchronized/synchronized.dart';
+
+class WenkuNovelSource implements NovelSource {
+  static final String domain = "https://www.wenku8.net";
+
+  static const String userAgent =
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36";
+
+  static final Lock lock = Lock();
+
+  static final Scheduler _scheduler = Scheduler(20, Duration(minutes: 1));
+
+  final Dio dio = _dio();
+
+  @override
+  final String name = "轻小说文库";
+
+  static Dio _dio() {
+    FutureOr<String?> gbkDecoder(responseBytes, options, responseBody) {
+      return gbk_bytes.decode(responseBytes);
+    }
+
+    const headers = {
+      "User-Agent": userAgent,
+    };
+    BaseOptions options = BaseOptions(
+      headers: headers,
+      responseDecoder: gbkDecoder,
+    );
+    var dio = Dio(options);
+    dio.interceptors.add(CloudflareInterceptor(dio));
+    return dio;
+  }
+
+  @override
+  Future<NovelSection> explore() {
+    // TODO: implement explore
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<Novel>> search(String keyword, [int page = 1]) {
+    // TODO: implement search
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Novel> loadNovel(String id) async {
+    String url = "$domain/book/$id.htm";
+    var resp = await dio.get(url);
+    String html = resp.data.toString();
+    return _parseNovel(id, html);
+  }
+
+  Novel _parseNovel(String id, String html) {
+    WenkuNovel novel = WenkuNovel();
+    var doc = parse(html);
+    novel.id = id.toString();
+    novel.title = doc
+        .querySelector("#content")!
+        .querySelector("table:nth-child(1)")!
+        .querySelector("span b")!
+        .text;
+    novel.coverUrl = doc.querySelector("#content table img")?.attributes["src"];
+    List<Element>? details = doc
+        .querySelector("#content table:nth-child(1)")
+        ?.querySelector("tr:nth-child(2)")
+        ?.querySelectorAll("td");
+    if (details != null && details.length >= 3) {
+      novel.status = details[2].text.replaceFirst("文章状态：", "");
+      novel.author = details[1].text.replaceFirst("小说作者：", "");
+    }
+    Element td = doc
+        .querySelectorAll("#content table")[2]
+        .querySelectorAll("td")[1];
+
+    novel.tags = td
+        .querySelector("span")!
+        .text
+        .replaceFirst("作品Tags：", "")
+        .split(" ");
+    novel.description = td.querySelectorAll("span").last.text;
+
+    novel.catalogUrl = doc
+        .querySelector("legend + div > a")!
+        .attributes["href"]!;
+    if (!novel.catalogUrl.startsWith("http")) {
+      novel.catalogUrl =
+          domain +
+          (novel.catalogUrl.startsWith("/") ? "" : "/") +
+          novel.catalogUrl;
+    }
+    return novel;
+  }
+
+  @override
+  Future<Catalog> loadCatalog(Novel novel) async {
+    String catalogUrl = (novel as WenkuNovel).catalogUrl;
+    String prefix = Uri.parse(catalogUrl).resolve("./").toString();
+    var resp = await dio.get(catalogUrl);
+    String html = resp.data.toString();
+    return _parseCatalog(html, prefix);
+  }
+
+  Catalog _parseCatalog(String html, String prefix) {
+    Catalog catalog = Catalog();
+    Sequence seq = Sequence();
+    Volume? volume;
+
+    var doc = parse(html);
+    var tdList = doc.querySelectorAll("table td");
+    for (var td in tdList) {
+      var styleClass = td.attributes["class"];
+      if (styleClass == "vcss") {
+        if (volume != null) {
+          catalog.volumes.add(volume);
+        }
+        volume = Volume(id: seq.next)..name = td.text;
+      } else if (styleClass == "ccss") {
+        var link = td.querySelector("a");
+        if (link == null) continue;
+        var href = link.attributes["href"];
+        if (volume == null) continue;
+        var chapter = Chapter(id: "$prefix/$href", name: link.text);
+        // 将插图移动至最前面
+        if (chapter.name == "插图") {
+          volume.chapters.insert(0, chapter);
+        } else {
+          volume.chapters.add(chapter);
+        }
+      }
+    }
+    if (volume != null) {
+      catalog.volumes.add(volume);
+    }
+    return catalog;
+  }
+
+  @override
+  Future<Document> loadChapter(Catalog catalog, Chapter chapter) {
+    return retry(
+      () => _scheduler.run(
+        (c) => _loadChapter(catalog, chapter, c),
+      ),
+      maxAttempts: 3,
+      retryIf: (e) => true,
+    );
+  }
+
+  Future<Document> _loadChapter(
+    Catalog catalog,
+    Chapter chapter,
+    SchedulerController controller,
+  ) async {
+    String chapterUrl = chapter.id as String;
+    var resp = await dio.get(chapterUrl);
+    var html = resp.data.toString();
+    var doc = parse(html);
+    var content = doc.querySelector("#content");
+    if (content == null) {
+      throw "no such element: #content";
+    }
+    HTMLUtil.removeElements(content.querySelectorAll("#contentdp"));
+    HTMLUtil.removeElements(content.querySelectorAll("br"));
+    return _wrapDocument(content);
+  }
+
+  Document _wrapDocument(Element content) {
+    Document doc = Document.html(LightNovelSource.html);
+    var nodes = content.nodes;
+    for (var node in nodes) {
+      if (node is Text) {
+        String text = node.data.trim();
+        if (text.isEmpty) continue;
+        var element = Element.tag("p")..text = text;
+        doc.body!.append(element);
+      } else {
+        doc.body!.append(node.clone(true));
+      }
+    }
+    var links = doc.querySelectorAll("a");
+    for (var link in links) {
+      HTMLUtil.unwrap(link);
+    }
+    return doc;
+  }
+
+  @override
+  Future<List<int>> loadImage(String src) async {
+    return _scheduler.run((_) async {
+      var resp = await dio.get(
+        src,
+        options: Options(responseType: ResponseType.bytes),
+      );
+      return resp.data as List<int>;
+    });
+  }
+}

@@ -1,5 +1,5 @@
 import 'package:bili_novel_packer/epub_packer/epub_node.dart';
-import 'package:bili_novel_packer/media_type.dart' as media_type;
+import 'package:bili_novel_packer/epub_packer/media_type.dart' as media_type;
 import 'package:xml/xml.dart';
 
 /// content.opf

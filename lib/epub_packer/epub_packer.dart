@@ -3,19 +3,18 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:archive/archive_io.dart';
-import 'package:bili_novel_packer/epub_packer/epub_constant.dart';
+import 'package:bili_novel_packer/epub_packer/epub_file.dart' as epub_file;
 import 'package:bili_novel_packer/epub_packer/epub_navigator.dart';
 import 'package:bili_novel_packer/epub_packer/epub_opf.dart';
-import 'package:bili_novel_packer/media_type.dart' as epub_media_type;
-import 'package:bili_novel_packer/media_type.dart';
-import 'package:bili_novel_packer/util/url_util.dart';
+import 'package:bili_novel_packer/epub_packer/media_type.dart' as media_type;
 import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
 
 class EpubPacker {
-  final String epubFilePath;
 
   static const Utf8Encoder _utf8Encoder = Utf8Encoder();
+  
+  final String epubFilePath;
 
   // toc.ncx
   final EpubNavigator _navigator = EpubNavigator();
@@ -31,7 +30,7 @@ class EpubPacker {
 
   String get docTitle => _navigator.docTitle;
 
-  set docTitle(docTitle) {
+  set docTitle(String docTitle) {
     _navigator.docTitle = docTitle;
     _opf.docTitle = docTitle;
   }
@@ -45,7 +44,7 @@ class EpubPacker {
 
   String get creator => _opf.creator;
 
-  set creator(creator) => _opf.creator = creator;
+  set creator(String creator) => _opf.creator = creator;
 
   String? get source => _opf.metaData.source;
 
@@ -71,12 +70,10 @@ class EpubPacker {
   EpubPacker(this.epubFilePath);
 
   /// 向EPUB中添加文件
-  /// [archiveFile] 要添加的文件
-  /// 注意：如果文件内容包含中文 需要使用Utf8Encoder()对内容进行编码
-  /// 否则会出现乱码问题
-  void addArchiveFile(ArchiveFile archiveFile, [int? index]) {
+  /// 如果文件内容包含中文 需要使用Utf8Encoder()对内容进行编码
+  void addArchiveFile(ArchiveFile archiveFile, [bool first = false]) {
     if (!_existArchiveFile(archiveFile)) {
-      if (index != null) {
+      if (first) {
         archiveFiles.insert(0, archiveFile);
       } else {
         archiveFiles.add(archiveFile);
@@ -95,13 +92,13 @@ class EpubPacker {
 
   /// 添加章节文件
   /// [id] 可选
-  /// [mediaType] 可选，默认使用[EpubMediaType.xhtml]
+  /// [mediaType] 可选，默认使用[media_type.xhtml]
   /// [name] 章节文件在EPUB中的全路径 例如: "OEBPS/chapter001.xhtml"
   /// [title] 章节标题
   /// [chapterContent] 章节的文件内容
   void addChapter({
     String? id,
-    String mediaType = epub_media_type.xhtml,
+    String mediaType = media_type.xhtml,
     bool addNavPoint = true,
     required String name,
     required String title,
@@ -111,12 +108,8 @@ class EpubPacker {
     String href = path.relative(name, from: "OEBPS");
     id ??= href;
     Uint8List utf8Uint8List = _utf8Encoder.convert(chapterContent);
-    addArchiveFile(
-      ArchiveFile(name, utf8Uint8List.length, utf8Uint8List),
-    );
-    _opf.addChapter(
-      ManifestItem(id, href, mediaType),
-    );
+    addArchiveFile(ArchiveFile(name, utf8Uint8List.length, utf8Uint8List));
+    _opf.addChapter(ManifestItem(id, href, mediaType));
     if (addNavPoint) {
       NavPoint navPoint = NavPoint(title, src: href);
       _navigator.addNavPoint(navPoint);
@@ -130,32 +123,30 @@ class EpubPacker {
   /// [data] 图片数据
   void addImage({
     String? id,
-    String mediaType = epub_media_type.jpeg,
+    String mediaType = media_type.jpeg,
     required String name,
     required Uint8List data,
   }) {
     String href = path.relative(name, from: "OEBPS");
     id ??= href;
-    id = _handleId(id);
-    addArchiveFile(
-      ArchiveFile(name, data.length, data),
-    );
+    id = _transformId(id);
+    addArchiveFile(ArchiveFile(name, data.length, data));
     _opf.addImage(ManifestItem(id, href, mediaType));
   }
 
   void addStylesheet(ArchiveFile archiveFile) {
-    String id = URLUtil.getFileName(archiveFile.name);
+    String id = path.basename(archiveFile.name);
     String href = path.relative(archiveFile.name, from: "OEBPS");
-    id = _handleId(id);
+    id = _transformId(id);
     addArchiveFile(archiveFile);
-    _opf.addStylesheet(ManifestItem(id, href, css));
+    _opf.addStylesheet(ManifestItem(id, href, media_type.css));
   }
 
   void addNavPoint(NavPoint navPoint) {
     _navigator.addNavPoint(navPoint);
   }
 
-  String _handleId(String id) {
+  String _transformId(String id) {
     List<String> symbols = ["\\", "/", "."];
     for (var symbol in symbols) {
       id = id.replaceAll(symbol, "_");
@@ -164,32 +155,24 @@ class EpubPacker {
   }
 
   /// 执行打包操作
-  void pack() {
+  void pack() async {
     bookUuid = Uuid().v1();
     Uint8List ncxUint8List = _utf8Encoder.convert(
       _navigator.build().toXmlString(pretty: true),
     );
     // mimetype 应为打包的第一个文件
-    addArchiveFile(getMimeType(), 0);
-    addArchiveFile(getContainer());
+    addArchiveFile(await epub_file.mimetype, true);
+    addArchiveFile(await epub_file.container);
 
     /// 在打包前需要添加content.opf和toc.ncx文件
     addArchiveFile(
-      ArchiveFile(
-        "OEBPS/toc.ncx",
-        ncxUint8List.length,
-        ncxUint8List,
-      ),
+      ArchiveFile("OEBPS/toc.ncx", ncxUint8List.length, ncxUint8List),
     );
     Uint8List opfUint8List = _utf8Encoder.convert(
       _opf.build().toXmlString(pretty: true),
     );
     addArchiveFile(
-      ArchiveFile(
-        "OEBPS/content.opf",
-        opfUint8List.length,
-        opfUint8List,
-      ),
+      ArchiveFile("OEBPS/content.opf", opfUint8List.length, opfUint8List),
     );
     final ZipFileEncoder zip = ZipFileEncoder();
     zip.create(epubFilePath, level: Deflate.NO_COMPRESSION);
