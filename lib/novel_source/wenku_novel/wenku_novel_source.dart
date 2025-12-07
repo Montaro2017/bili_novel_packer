@@ -1,17 +1,16 @@
 import 'dart:async';
-import 'dart:typed_data';
 
+import 'package:bili_novel_packer/exception.dart';
 import 'package:bili_novel_packer/novel_source/base/cloudflare_interceptor.dart';
-import 'package:bili_novel_packer/novel_source/base/light_novel_model.dart';
 import 'package:bili_novel_packer/novel_source/base/light_novel_source.dart';
+import 'package:bili_novel_packer/novel_source/base/novel_model.dart';
 import 'package:bili_novel_packer/novel_source/base/novel_source.dart';
 import 'package:bili_novel_packer/novel_source/wenku_novel/wenku_novel.dart';
 import 'package:bili_novel_packer/scheduler/scheduler.dart';
 import 'package:bili_novel_packer/util/html_util.dart';
-import 'package:bili_novel_packer/util/http_util.dart';
 import 'package:bili_novel_packer/util/sequence.dart';
-import 'package:gbk_codec/gbk_codec.dart';
 import 'package:dio/dio.dart';
+import 'package:gbk_codec/gbk_codec.dart';
 import 'package:html/dom.dart';
 import 'package:html/parser.dart';
 import 'package:retry/retry.dart';
@@ -42,6 +41,7 @@ class WenkuNovelSource implements NovelSource {
     };
     BaseOptions options = BaseOptions(
       headers: headers,
+      responseType: ResponseType.plain,
       responseDecoder: gbkDecoder,
     );
     var dio = Dio(options);
@@ -50,15 +50,13 @@ class WenkuNovelSource implements NovelSource {
   }
 
   @override
-  Future<NovelSection> explore() {
-    // TODO: implement explore
-    throw UnimplementedError();
+  Future<List<NovelSection>> explore() {
+    throw NotRetryableException("轻小说文库仅支持直接搜索链接");
   }
 
   @override
-  Future<List<Novel>> search(String keyword, [int page = 1]) {
-    // TODO: implement search
-    throw UnimplementedError();
+  FutureIterator<List<Novel>> search(String keyword) {
+    throw NotRetryableException("轻小说文库仅支持直接搜索链接");
   }
 
   @override

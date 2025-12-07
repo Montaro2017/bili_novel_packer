@@ -1,12 +1,12 @@
-import 'package:bili_novel_packer/novel_source/base/light_novel_model.dart';
+import 'package:bili_novel_packer/novel_source/base/novel_model.dart';
 import 'package:html/dom.dart';
 
 abstract class NovelSource {
   String get name;
 
-  Future<NovelSection> explore();
+  Future<List<NovelSection>> explore();
 
-  Future<List<Novel>> search(String keyword, [int page = 1]);
+  FutureIterator<List<Novel>> search(String keyword);
 
   Future<Novel> loadNovel(String id);
 
@@ -15,4 +15,10 @@ abstract class NovelSource {
   Future<Document> loadChapter(Catalog catalog, Chapter chapter);
 
   Future<List<int>> loadImage(String src);
+}
+
+abstract class FutureIterator<E> {
+  Future<E> get current;
+
+  Future<bool> moveNext();
 }

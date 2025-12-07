@@ -12,6 +12,5 @@ class CloudflareInterceptor extends Interceptor {
     ResponseInterceptorHandler handler,
   ) async {
     handler.resolve(response);
-    super.onResponse(response, handler);
   }
 }

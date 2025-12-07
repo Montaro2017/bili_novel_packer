@@ -1,20 +1,28 @@
 class Novel {
   // id
   late String id;
+
   // 书名
   late String title;
+
   // 别名
   String? alias;
+
   // 作者
   String? author;
+
   // 连载状态
   String? status;
+
   // 封面图片
   String? coverUrl;
+
   // 标签
   List<String>? tags;
+
   // 文库
   String? publisher;
+
   // 简介
   String? description;
 }
@@ -62,5 +70,7 @@ class Chapter {
 
 class NovelSection {
   String? name;
-  List<Novel> novels = [];
+  List<Novel> novels;
+
+  NovelSection([this.name, this.novels = const []]);
 }

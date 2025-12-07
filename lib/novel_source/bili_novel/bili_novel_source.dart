@@ -1,17 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 
-import 'package:bili_novel_packer/log.dart';
+import 'package:bili_novel_packer/extension/string_extension.dart';
 import 'package:bili_novel_packer/novel_source/base/cloudflare_interceptor.dart';
+import 'package:bili_novel_packer/novel_source/base/novel_model.dart';
 import 'package:bili_novel_packer/novel_source/base/novel_source.dart';
-import 'package:bili_novel_packer/scheduler/scheduler.dart';
-import 'package:bili_novel_packer/novel_source/base/light_novel_model.dart';
-import 'package:bili_novel_packer/novel_source/base/light_novel_source.dart';
 import 'package:bili_novel_packer/novel_source/bili_novel/bili_novel_secret.dart';
-import 'package:bili_novel_packer/util/html_util.dart';
-import 'package:bili_novel_packer/util/http_util.dart';
-import 'package:bili_novel_packer/util/sequence.dart';
+import 'package:bili_novel_packer/scheduler/scheduler.dart';
 import 'package:dio/dio.dart';
 import 'package:html/dom.dart';
 import 'package:html/parser.dart';
@@ -25,7 +20,7 @@ class BiliNovelSource implements NovelSource {
   static const String domain = "https://www.bilinovel.com";
   static const String userAgent =
       "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
-  static const String cookie = "night=0";
+  static const String cookie = "night=1";
 
   static Lock lock = Lock();
   static bool warnFlag = false;
@@ -41,10 +36,11 @@ class BiliNovelSource implements NovelSource {
       "Accept-Language": " zh-CN,zh;q=0.9",
       "User-Agent": userAgent,
       "Cookie": cookie,
-      "Referer": domain,
+      "Referer": "$domain/",
     };
     BaseOptions options = BaseOptions(
       headers: headers,
+      responseType: ResponseType.plain,
     );
     var dio = Dio(options);
     dio.interceptors.add(CloudflareInterceptor(dio));
@@ -57,15 +53,62 @@ class BiliNovelSource implements NovelSource {
   }
 
   @override
-  Future<NovelSection> explore() {
-    // TODO: implement explore
-    throw UnimplementedError();
+  Future<List<NovelSection>> explore() async {
+    var resp = await dio.get(domain);
+    var html = resp.data.toString();
+    return _parseIndex(html);
+  }
+
+  List<NovelSection> _parseIndex(String html) {
+    var doc = parse(html);
+    var bookOls = doc.querySelectorAll(".module-header + .book-ol");
+    if (bookOls.isEmpty) {
+      return [];
+    }
+    List<NovelSection> novelSections = [];
+    for (var bookOl in bookOls) {
+      var moduleHeader = bookOl.previousElementSibling;
+      var name = moduleHeader?.querySelector(".module-title")?.text;
+      if (name == null) {
+        continue;
+      }
+      var bookLis = bookOl.querySelectorAll(".book-li");
+      var novels = bookLis
+          .map(
+            (bookLi) => _parseNovel(bookLi),
+          )
+          .toList();
+      NovelSection section = NovelSection(name, novels);
+      novelSections.add(section);
+    }
+
+    return novelSections;
+  }
+
+  static Novel _parseNovel(Element bookLi) {
+    Novel novel = Novel();
+    // id
+    var anchor = bookLi.querySelector(".book-li > a");
+    var href = anchor!.attributes["href"]!;
+    novel.id = href.subBetween("/novel/", ".")!;
+    // 封面图
+    var img = bookLi.querySelector(".book-cover > img");
+    novel.coverUrl = img?.attributes["src"];
+    // 标题 简介
+    novel.title = bookLi.querySelector(".book-title")!.text;
+    novel.description = bookLi.querySelector(".book-desc")!.text.trim();
+    // 作者
+    novel.author = bookLi.querySelector(".book-author")!.nodes.last.text;
+    // 状态
+    novel.status = bookLi.querySelector(".tag-small.red")!.text;
+    // 标签
+    novel.tags = bookLi.querySelector(".tag-small.yellow")!.text.split(" ");
+    return novel;
   }
 
   @override
-  Future<List<Novel>> search(String keyword, [int page = 1]) {
-    // TODO: implement search
-    throw UnimplementedError();
+  FutureIterator<List<Novel>> search(String keyword) {
+    return BiliNovelSearchIterator(dio, keyword);
   }
 
   @override
@@ -583,6 +626,51 @@ class BiliNovelSource implements NovelSource {
   //     );
   //   });
   // }
+}
+
+class BiliNovelSearchIterator implements FutureIterator<List<Novel>> {
+  int _currPage = 0;
+  int _maxPage = 0;
+
+  final Dio dio;
+  final String keyword;
+
+  BiliNovelSearchIterator(this.dio, this.keyword);
+
+  @override
+  Future<List<Novel>> get current async {
+    String url = "${BiliNovelSource.domain}/search/${keyword}_$_currPage.html";
+    var resp = await dio.get(url);
+    var html = resp.data.toString();
+    var doc = parse(html);
+    _maxPage = _parseMaxPage(doc);
+    return _parseSearchResults(doc);
+  }
+
+  int _parseMaxPage(Document doc) {
+    var text = doc.querySelector("#pagelink > span")!.text;
+    RegExpMatch match = RegExp("(\\d+)/(\\d+)").firstMatch(text)!;
+    return int.parse(match.group(2)!);
+  }
+
+  List<Novel> _parseSearchResults(Document doc) {
+    var bookLis = doc.querySelectorAll(".book-li");
+    if (bookLis.isEmpty) {
+      return [];
+    }
+    return bookLis
+        .map((bookLi) => BiliNovelSource._parseNovel(bookLi))
+        .toList();
+  }
+
+  @override
+  Future<bool> moveNext() async {
+    if (_currPage == 0 || _currPage < _maxPage) {
+      _currPage++;
+      return true;
+    }
+    return false;
+  }
 }
 
 class ChapterPage {
