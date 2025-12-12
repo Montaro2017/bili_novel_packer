@@ -81,7 +81,6 @@ class BiliNovelSource implements NovelSource {
       NovelSection section = NovelSection(name, novels);
       novelSections.add(section);
     }
-
     return novelSections;
   }
 
@@ -108,7 +107,7 @@ class BiliNovelSource implements NovelSource {
 
   @override
   FutureIterator<List<Novel>> search(String keyword) {
-    return BiliNovelSearchIterator(dio, keyword);
+    return _BiliNovelSearchIterator(dio, keyword);
   }
 
   @override
@@ -131,7 +130,7 @@ class BiliNovelSource implements NovelSource {
 
   @override
   Future<List<int>> loadImage(String src) {
-    return _scheduler.run((c) {
+    return _imageScheduler.run((c) {
       return _loadImage(src);
     });
   }
@@ -628,14 +627,14 @@ class BiliNovelSource implements NovelSource {
   // }
 }
 
-class BiliNovelSearchIterator implements FutureIterator<List<Novel>> {
+class _BiliNovelSearchIterator implements FutureIterator<List<Novel>> {
   int _currPage = 0;
   int _maxPage = 0;
 
   final Dio dio;
   final String keyword;
 
-  BiliNovelSearchIterator(this.dio, this.keyword);
+  _BiliNovelSearchIterator(this.dio, this.keyword);
 
   @override
   Future<List<Novel>> get current async {

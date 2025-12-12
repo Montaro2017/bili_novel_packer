@@ -8,7 +8,7 @@
 PRODUCT_NAME = bili_novel_packer
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = cn.montaro.bilinovel.biliNovelPacker
+PRODUCT_BUNDLE_IDENTIFIER = cn.montaro.biliNovelPacker
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2025 cn.montaro.bilinovel. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2025 cn.montaro. All rights reserved.

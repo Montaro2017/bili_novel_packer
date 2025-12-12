@@ -1,7 +1,15 @@
 import 'package:bili_novel_packer/novel_source/base/novel_model.dart';
+import 'package:bili_novel_packer/novel_source/bili_novel/bili_novel_source.dart';
+import 'package:bili_novel_packer/novel_source/wenku_novel/wenku_novel_source.dart';
 import 'package:html/dom.dart';
 
 abstract class NovelSource {
+  
+  static List<NovelSource> sources = [
+    BiliNovelSource(),
+    WenkuNovelSource(),
+  ];
+
   String get name;
 
   Future<List<NovelSection>> explore();

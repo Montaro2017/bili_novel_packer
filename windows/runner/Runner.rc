@@ -89,11 +89,11 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "cn.montaro.bilinovel" "\0"
+            VALUE "CompanyName", "cn.montaro" "\0"
             VALUE "FileDescription", "bili_novel_packer" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "bili_novel_packer" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2025 cn.montaro.bilinovel. All rights reserved." "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2025 cn.montaro. All rights reserved." "\0"
             VALUE "OriginalFilename", "bili_novel_packer.exe" "\0"
             VALUE "ProductName", "bili_novel_packer" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"

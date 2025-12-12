@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
-abstract class BasePage extends StatelessWidget {
+abstract class SecondaryPage extends StatelessWidget {
   
-  const BasePage({super.key});
+  const SecondaryPage({super.key});
+
+  PreferredSizeWidget? appBar();
 
 }
