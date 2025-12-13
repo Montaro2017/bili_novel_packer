@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:bili_novel_packer/novel_source/base/novel_model.dart';
 import 'package:bili_novel_packer/novel_source/bili_novel/bili_novel_source.dart';
 import 'package:bili_novel_packer/novel_source/wenku_novel/wenku_novel_source.dart';
@@ -22,7 +24,7 @@ abstract class NovelSource {
 
   Future<Document> loadChapter(Catalog catalog, Chapter chapter);
 
-  Future<List<int>> loadImage(String src);
+  Future<Uint8List> loadImage(String src);
 }
 
 abstract class FutureIterator<E> {

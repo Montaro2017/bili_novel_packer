@@ -1,28 +1,51 @@
 import 'package:bili_novel_packer/novel_source/base/novel_model.dart';
+import 'package:bili_novel_packer/novel_source/base/novel_source.dart';
 import 'package:bili_novel_packer/widget/novel_card_grid.dart';
 import 'package:flutter/material.dart';
 
-class NovelSectionWidget extends StatelessWidget {
-  final NovelSection novelSection;
+class NovelSectionWidget extends StatefulWidget {
+  final NovelSource source;
+  final NovelSection section;
   final void Function(Novel)? onTap;
 
-  const NovelSectionWidget(this.novelSection, {super.key, this.onTap});
+  const NovelSectionWidget({
+    super.key,
+    required this.source,
+    required this.section,
+    this.onTap,
+  });
 
   @override
+  State<StatefulWidget> createState() {
+    return _NovelSectionWidgetState();
+  }
+}
+
+class _NovelSectionWidgetState extends State<NovelSectionWidget>
+    with AutomaticKeepAliveClientMixin {
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (novelSection.name != null)
+        if (widget.section.name != null)
           Padding(
-            padding: EdgeInsets.only(bottom: 16),
+            padding: EdgeInsetsGeometry.symmetric(vertical: 8, horizontal: 16),
             child: Text(
-              novelSection.name!,
+              widget.section.name!,
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
             ),
           ),
-        NovelCardGridView(novels: novelSection.novels),
+        NovelCardGridView(
+          source: widget.source,
+          novels: widget.section.novels,
+          onTap: widget.onTap,
+        ),
       ],
     );
   }
+
+  @override
+  bool get wantKeepAlive => true;
 }

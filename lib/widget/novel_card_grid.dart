@@ -1,16 +1,18 @@
 import 'dart:math';
 
 import 'package:bili_novel_packer/novel_source/base/novel_model.dart';
+import 'package:bili_novel_packer/novel_source/base/novel_source.dart';
 import 'package:bili_novel_packer/widget/novel_card.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class NovelCardGridView extends StatelessWidget {
+  final NovelSource source;
   final List<Novel> novels;
   final void Function(Novel novel)? onTap;
 
   const NovelCardGridView({
     super.key,
+    required this.source,
     required this.novels,
     this.onTap,
   });
@@ -33,12 +35,9 @@ class NovelCardGridView extends StatelessWidget {
         var itemWidth = (maxWidth - spacing * (itemCount - 1)) / itemCount;
 
         if (baseItemCount < 1) baseItemCount = 1;
-        if (kDebugMode) {
-          print("itemCount = $baseItemCount, itemWidth = $itemWidth");
-        }
         return Wrap(
           spacing: spacing,
-          runSpacing: spacing,
+          // runSpacing: spacing,
           children: novels
               .map((novel) => _novelCard(novel, itemWidth))
               .toList(),
@@ -49,6 +48,7 @@ class NovelCardGridView extends StatelessWidget {
 
   Widget _novelCard(Novel novel, double width) {
     return NovelCard(
+      source: source,
       novel: novel,
       width: width,
       onTap: onTap != null

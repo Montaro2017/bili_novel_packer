@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:bili_novel_packer/exception.dart';
 import 'package:bili_novel_packer/novel_source/base/cloudflare_interceptor.dart';
@@ -201,13 +202,13 @@ class WenkuNovelSource implements NovelSource {
   }
 
   @override
-  Future<List<int>> loadImage(String src) async {
+  Future<Uint8List> loadImage(String src) async {
     return _scheduler.run((_) async {
       var resp = await dio.get(
         src,
         options: Options(responseType: ResponseType.bytes),
       );
-      return resp.data as List<int>;
+      return resp.data as Uint8List;
     });
   }
 }

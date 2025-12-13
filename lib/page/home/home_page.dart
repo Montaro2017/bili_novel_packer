@@ -134,14 +134,18 @@ class _NovelSourceHomeWidgetState extends State<_NovelSourceHomeWidget>
       itemCount: sections!.length,
       itemBuilder: (context, index) {
         var section = sections![index];
-        var widget = NovelSectionWidget(section, onTap: onTap);
+        var sectionWidget = NovelSectionWidget(
+          source: widget.source,
+          section: section,
+          onTap: onTap,
+        );
         if (index == 0) {
-          return Padding(padding: EdgeInsets.all(16), child: widget);
-        } else {
           return Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: widget,
+            padding: EdgeInsetsGeometry.only(top: 8),
+            child: sectionWidget,
           );
+        } else {
+          return sectionWidget;
         }
       },
     );

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:bili_novel_packer/extension/string_extension.dart';
 import 'package:bili_novel_packer/novel_source/base/cloudflare_interceptor.dart';
@@ -92,7 +93,7 @@ class BiliNovelSource implements NovelSource {
     novel.id = href.subBetween("/novel/", ".")!;
     // 封面图
     var img = bookLi.querySelector(".book-cover > img");
-    novel.coverUrl = img?.attributes["src"];
+    novel.coverUrl = img?.attributes["data-src"];
     // 标题 简介
     novel.title = bookLi.querySelector(".book-title")!.text;
     novel.description = bookLi.querySelector(".book-desc")!.text.trim();
@@ -129,7 +130,7 @@ class BiliNovelSource implements NovelSource {
   }
 
   @override
-  Future<List<int>> loadImage(String src) {
+  Future<Uint8List> loadImage(String src) {
     return _imageScheduler.run((c) {
       return _loadImage(src);
     });
@@ -145,7 +146,7 @@ class BiliNovelSource implements NovelSource {
     return src;
   }
 
-  Future<List<int>> _loadImage(String src) async {
+  Future<Uint8List> _loadImage(String src) async {
     if (src.startsWith("data:image")) {
       src = src.split(",")[1];
       return Future.value(base64.decode(src));
@@ -155,7 +156,7 @@ class BiliNovelSource implements NovelSource {
       src,
       options: Options(responseType: ResponseType.bytes),
     );
-    return resp.data as List<int>;
+    return resp.data as Uint8List;
   }
 
   // /// 获取小说基本信息

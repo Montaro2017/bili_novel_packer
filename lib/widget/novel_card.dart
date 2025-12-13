@@ -1,16 +1,20 @@
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:bili_novel_packer/config/global_config.dart';
 import 'package:bili_novel_packer/novel_source/base/novel_model.dart';
+import 'package:bili_novel_packer/novel_source/base/novel_source.dart';
 import 'package:flutter/material.dart';
 
 class NovelCard extends StatefulWidget {
+  final NovelSource source;
   final Novel novel;
   final void Function()? onTap;
   final double width;
 
   const NovelCard({
     super.key,
+    required this.source,
     required this.novel,
     required this.width,
     this.onTap,
@@ -26,18 +30,34 @@ class _NovelCardState extends State<NovelCard> {
   Uint8List? _imageData;
 
   @override
+  void initState() {
+    super.initState();
+
+    if (widget.novel.coverUrl != null && GlobalConfig.loadImage) {
+      widget.source.loadImage(widget.novel.coverUrl!).then((data) {
+        setState(() {
+          _imageData = data;
+        });
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: widget.width,
       child: InkWell(
         onTap: widget.onTap,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _novelCover(),
-            SizedBox(width: 8),
-            _novelInfo(),
-          ],
+        child: Padding(
+          padding: EdgeInsetsGeometry.symmetric(vertical: 8, horizontal: 16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _novelCover(),
+              SizedBox(width: 8),
+              _novelInfo(),
+            ],
+          ),
         ),
       ),
     );
@@ -49,19 +69,21 @@ class _NovelCardState extends State<NovelCard> {
         double maxWidth = 140;
         var factor = 0.4;
         double width = min(widget.width * factor, maxWidth);
-        print("parentWidth = ${widget.width}, width = $width");
         return SizedBox(
           width: width,
           child: AspectRatio(
             aspectRatio: 3 / 4,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(4),
-              child: Container(
-                color: Theme.of(context).primaryColorLight,
-                child: _imageData != null
-                    ? Image.memory(_imageData!)
-                    : Center(child: Icon(Icons.info)),
-              ),
+              child: _imageData != null
+                  ? Image.memory(
+                      _imageData!,
+                      fit: BoxFit.cover,
+                    )
+                  : Container(
+                      color: Theme.of(context).primaryColorLight,
+                      child: Center(child: Icon(Icons.info)),
+                    ),
             ),
           ),
         );
