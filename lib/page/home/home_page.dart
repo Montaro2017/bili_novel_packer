@@ -2,6 +2,7 @@ import 'package:bili_novel_packer/exception.dart';
 import 'package:bili_novel_packer/novel_source/base/novel_model.dart';
 import 'package:bili_novel_packer/novel_source/base/novel_source.dart';
 import 'package:bili_novel_packer/page/home/novel_section_widget.dart';
+import 'package:bili_novel_packer/page/search/search_page.dart';
 import 'package:flutter/material.dart';
 
 class HomePage extends StatelessWidget {
@@ -17,7 +18,13 @@ class HomePage extends StatelessWidget {
           title: Text('BiliNovelPacker'),
           actions: [
             IconButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => SearchPage(),
+                  ),
+                );
+              },
               icon: Icon(Icons.search),
             ),
           ],

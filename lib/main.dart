@@ -1,4 +1,4 @@
-import 'package:bili_novel_packer/page/routes.dart';
+import 'package:bili_novel_packer/page/home/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
 
@@ -37,8 +37,7 @@ class _MyAppState extends State<MyApp> {
           'Noto Sans CJK SC',
         ],
       ),
-      initialRoute: '/home',
-      routes: routes,
+        home: HomePage()
     );
   }
 }
