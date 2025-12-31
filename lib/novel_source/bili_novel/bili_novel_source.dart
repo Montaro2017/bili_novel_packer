@@ -107,14 +107,41 @@ class BiliNovelSource implements NovelSource {
   }
 
   @override
-  FutureIterator<List<Novel>> search(String keyword) {
+  SearchIterator<Novel> search(String keyword) {
     return _BiliNovelSearchIterator(dio, keyword);
   }
 
   @override
-  Future<Novel> loadNovel(String id) {
-    // TODO: implement loadNovel
-    throw UnimplementedError();
+  Future<Novel> loadNovel(String id) async {
+    Novel novel = Novel();
+
+    String html = (await dio.get("$domain/novel/$id.html")).data.string;
+    var doc = parse(html);
+    novel.id = id.toString();
+    novel.title = doc.querySelector(".book-title")!.text;
+
+    // 解析别名信息
+    var backupNameElement = doc.querySelector(
+      ".backupname .bkname-body.gray",
+    );
+    if (backupNameElement != null) {
+      novel.alias = backupNameElement.text.trim();
+    }
+
+    novel.coverUrl = doc.querySelector(".book-layout img")!.attributes["src"]!;
+    novel.tags = doc
+        .querySelectorAll(".book-cell .book-meta span em")
+        .map((e) => e.text)
+        .toList();
+    novel.publisher = doc.querySelector(".tag-small.orange")?.text;
+    novel.status = doc
+        .querySelector(".book-cell .book-meta+.book-meta")!
+        .nodes
+        .last
+        .text!;
+    novel.author = doc.querySelector(".book-rand-a span")!.text;
+    novel.description = doc.querySelector("#bookSummary content")!.text;
+    return novel;
   }
 
   @override
@@ -159,8 +186,7 @@ class BiliNovelSource implements NovelSource {
     return resp.data as Uint8List;
   }
 
-  // /// 获取小说基本信息
-  // @override
+  /// 获取小说基本信息
   // Future<Novel> getNovelByUrl(String url) async {
   //   String id = _getId(url);
   //   Novel novel = Novel();
@@ -168,41 +194,6 @@ class BiliNovelSource implements NovelSource {
   //     "$domain/novel/$id.html",
   //     headers: {"Accept-Language": " zh-CN,zh;q=0.9"},
   //   );
-  //   try {
-  //     var doc = parse(html);
-  //     novel.id = id.toString();
-  //     novel.title = doc.querySelector(".book-title")!.text;
-
-  //     // 解析别名信息
-  //     var backupNameElement = doc.querySelector(
-  //       ".backupname .bkname-body.gray",
-  //     );
-  //     if (backupNameElement != null) {
-  //       novel.alias = backupNameElement.text.trim();
-  //     }
-
-  //     novel.coverUrl = doc
-  //         .querySelector(".book-layout img")!
-  //         .attributes["src"]!;
-  //     novel.tags = doc
-  //         .querySelectorAll(".book-cell .book-meta span em")
-  //         .map((e) => e.text)
-  //         .toList();
-  //     novel.publisher = doc.querySelector(".tag-small.orange")?.text;
-  //     novel.status = doc
-  //         .querySelector(".book-cell .book-meta+.book-meta")!
-  //         .nodes
-  //         .last
-  //         .text!;
-  //     novel.author = doc.querySelector(".book-rand-a span")!.text;
-  //     novel.description = doc.querySelector("#bookSummary content")!.text;
-  //     return novel;
-  //   } catch (e) {
-  //     logger.e(e);
-  //     logger.i(html);
-  //     rethrow;
-  //   }
-  // }
 
   // String _getId(String url) {
   //   var match = _exp.firstMatch(url);
@@ -628,26 +619,33 @@ class BiliNovelSource implements NovelSource {
   // }
 }
 
-class _BiliNovelSearchIterator implements FutureIterator<List<Novel>> {
-  int _currPage = 0;
-  int _maxPage = 0;
-
+class _BiliNovelSearchIterator implements SearchIterator<Novel> {
   final Dio dio;
   final String keyword;
+
+  int pageNum = 0;
+  int pageMax = 0;
 
   _BiliNovelSearchIterator(this.dio, this.keyword);
 
   @override
-  Future<List<Novel>> get current async {
-    String url = "${BiliNovelSource.domain}/search/${keyword}_$_currPage.html";
+  bool get hasNext => pageNum == 0 || pageNum < pageMax;
+
+  @override
+  Future<List<Novel>> next() async {
+    if (!hasNext) {
+      return Future.value([]);
+    }
+    String url =
+        "${BiliNovelSource.domain}/search/${keyword}_${++pageNum}.html";
     var resp = await dio.get(url);
     var html = resp.data.toString();
     var doc = parse(html);
-    _maxPage = _parseMaxPage(doc);
+    pageMax = _parsePageMax(doc);
     return _parseSearchResults(doc);
   }
 
-  int _parseMaxPage(Document doc) {
+  int _parsePageMax(Document doc) {
     var text = doc.querySelector("#pagelink > span")!.text;
     RegExpMatch match = RegExp("(\\d+)/(\\d+)").firstMatch(text)!;
     return int.parse(match.group(2)!);
@@ -661,15 +659,6 @@ class _BiliNovelSearchIterator implements FutureIterator<List<Novel>> {
     return bookLis
         .map((bookLi) => BiliNovelSource._parseNovel(bookLi))
         .toList();
-  }
-
-  @override
-  Future<bool> moveNext() async {
-    if (_currPage == 0 || _currPage < _maxPage) {
-      _currPage++;
-      return true;
-    }
-    return false;
   }
 }
 

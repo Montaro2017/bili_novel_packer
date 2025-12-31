@@ -19,7 +19,11 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    FlutterDisplayMode.setHighRefreshRate();
+    try {
+      FlutterDisplayMode.setHighRefreshRate();
+    } catch (e) {
+      // ignore
+    }
   }
 
   @override
@@ -37,7 +41,8 @@ class _MyAppState extends State<MyApp> {
           'Noto Sans CJK SC',
         ],
       ),
-        home: HomePage()
+      debugShowCheckedModeBanner: false,
+      home: HomePage(),
     );
   }
 }

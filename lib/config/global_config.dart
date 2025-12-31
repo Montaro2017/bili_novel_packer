@@ -1,3 +1,3 @@
 class GlobalConfig {
-  static bool loadImage = true;
+  static bool loadImage = false;
 }

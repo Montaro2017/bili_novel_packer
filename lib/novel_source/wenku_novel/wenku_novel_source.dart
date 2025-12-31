@@ -56,7 +56,7 @@ class WenkuNovelSource implements NovelSource {
   }
 
   @override
-  FutureIterator<List<Novel>> search(String keyword) {
+  SearchIterator<Novel> search(String keyword) {
     throw NotRetryableException("轻小说文库仅支持直接搜索链接");
   }
 

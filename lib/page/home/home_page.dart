@@ -1,6 +1,7 @@
 import 'package:bili_novel_packer/exception.dart';
 import 'package:bili_novel_packer/novel_source/base/novel_model.dart';
 import 'package:bili_novel_packer/novel_source/base/novel_source.dart';
+import 'package:bili_novel_packer/page/detail/detail_page.dart';
 import 'package:bili_novel_packer/page/home/novel_section_widget.dart';
 import 'package:bili_novel_packer/page/search/search_page.dart';
 import 'package:flutter/material.dart';
@@ -137,28 +138,40 @@ class _NovelSourceHomeWidgetState extends State<_NovelSourceHomeWidget>
   }
 
   Widget _buildExploreWidget() {
-    return ListView.builder(
-      itemCount: sections!.length,
-      itemBuilder: (context, index) {
-        var section = sections![index];
-        var sectionWidget = NovelSectionWidget(
-          source: widget.source,
-          section: section,
-          onTap: onTap,
-        );
-        if (index == 0) {
-          return Padding(
-            padding: EdgeInsetsGeometry.only(top: 8),
-            child: sectionWidget,
+    return RefreshIndicator(
+      child: ListView.builder(
+        itemCount: sections!.length,
+        itemBuilder: (context, index) {
+          var section = sections![index];
+          var sectionWidget = NovelSectionWidget(
+            source: widget.source,
+            section: section,
+            onTap: onTap,
           );
-        } else {
-          return sectionWidget;
-        }
-      },
+          if (index == 0) {
+            return Padding(
+              padding: EdgeInsetsGeometry.only(top: 8),
+              child: sectionWidget,
+            );
+          } else {
+            return sectionWidget;
+          }
+        },
+      ),
+      onRefresh: () async {},
     );
   }
 
-  void onTap(Novel novel) {}
+  void onTap(Novel novel) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => DetailPage(
+          source: widget.source,
+          novelId: novel.id,
+        ),
+      ),
+    );
+  }
 
   @override
   bool get wantKeepAlive => true;

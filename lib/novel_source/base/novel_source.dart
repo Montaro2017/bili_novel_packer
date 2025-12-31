@@ -6,7 +6,6 @@ import 'package:bili_novel_packer/novel_source/wenku_novel/wenku_novel_source.da
 import 'package:html/dom.dart';
 
 abstract class NovelSource {
-  
   static List<NovelSource> sources = [
     BiliNovelSource(),
     WenkuNovelSource(),
@@ -16,7 +15,7 @@ abstract class NovelSource {
 
   Future<List<NovelSection>> explore();
 
-  FutureIterator<List<Novel>> search(String keyword);
+  SearchIterator<Novel> search(String keyword);
 
   Future<Novel> loadNovel(String id);
 
@@ -27,8 +26,8 @@ abstract class NovelSource {
   Future<Uint8List> loadImage(String src);
 }
 
-abstract class FutureIterator<E> {
-  Future<E> get current;
+abstract class SearchIterator<E> {
+  bool get hasNext;
 
-  Future<bool> moveNext();
+  Future<List<E>> next();
 }
