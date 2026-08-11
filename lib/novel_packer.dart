@@ -168,7 +168,6 @@ class NovelPacker {
       );
       doc.body!.insertBefore(chapterTitle, firstChild);
     }
-    logger.i("OK ${chapter.volume.volumeName} ${chapter.chapterName}");
     return doc;
   }
 

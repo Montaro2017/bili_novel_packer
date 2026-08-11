@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:bili_novel_packer/light_novel/base/light_novel_model.dart';
-import 'package:bili_novel_packer/light_novel/base/light_novel_source.dart';
 import 'package:bili_novel_packer/interceptor/logging_interceptor.dart';
 import 'package:bili_novel_packer/interceptor/rate_limit_interceptor.dart';
 import 'package:bili_novel_packer/interceptor/redirect_interceptor.dart';
+import 'package:bili_novel_packer/light_novel/base/light_novel_model.dart';
+import 'package:bili_novel_packer/light_novel/base/light_novel_source.dart';
 import 'package:bili_novel_packer/light_novel/bili_novel/bili_novel_chapterlog.dart';
 import 'package:bili_novel_packer/light_novel/bili_novel/bili_novel_restore.dart';
 import 'package:bili_novel_packer/logger.dart';
@@ -256,7 +256,7 @@ class BiliNovelSource implements LightNovelSource {
 
     String chapterUrl = await _requireChapterUrl(chapter);
     logger.i(
-      " ==> ${chapter.volume.volumeName} ${chapter.chapterName} ${chapter.chapterUrl}",
+      "getNovelChapter: ${chapter.chapterName} ${chapter.chapterUrl}",
     );
     String? nextPageUrl = chapterUrl;
     do {
@@ -405,8 +405,6 @@ class BiliNovelSource implements LightNovelSource {
       logger.i(html);
       throw "运行出错，请提交Issues并上传日志文件($logFilePath)，下次运行会清空日志。";
     }
-
-    logger.i("GET $url OK");
     return content;
   }
 
@@ -425,7 +423,7 @@ class BiliNovelSource implements LightNovelSource {
     if (prev != null && prevUrl != null) {
       if (_isPageLink(prev, _previousPageTexts)) {
         prevPage = domain + prevUrl;
-      } else {
+      } else if (!_isCatalog(prev)) {
         prevChapter = domain + prevUrl;
       }
     }
@@ -433,7 +431,7 @@ class BiliNovelSource implements LightNovelSource {
     if (next != null && nextUrl != null) {
       if (_isPageLink(next, _nextPageTexts)) {
         nextPage = domain + nextUrl;
-      } else {
+      } else if (!_isCatalog(next)){
         nextChapter = domain + nextUrl;
       }
     }
@@ -448,6 +446,10 @@ class BiliNovelSource implements LightNovelSource {
 
   bool _isPageLink(Element? link, Set<String> pageTexts) {
     return link != null && pageTexts.contains(link.text);
+  }
+
+  bool _isCatalog(Element? link) {
+    return link != null && link.text == "返回目录";
   }
 
   void _cleanChapterContent(Element content) {
