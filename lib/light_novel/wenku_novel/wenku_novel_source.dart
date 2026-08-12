@@ -1,13 +1,12 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:bili_novel_packer/light_novel/base/light_novel_model.dart';
-import 'package:bili_novel_packer/light_novel/base/light_novel_source.dart';
 import 'package:bili_novel_packer/interceptor/logging_interceptor.dart';
 import 'package:bili_novel_packer/interceptor/rate_limit_interceptor.dart';
+import 'package:bili_novel_packer/light_novel/base/light_novel_model.dart';
+import 'package:bili_novel_packer/light_novel/base/light_novel_source.dart';
 import 'package:bili_novel_packer/light_novel/wenku_novel/wenku_novel.dart';
 import 'package:bili_novel_packer/logger.dart';
-import 'package:bili_novel_packer/scheduler/scheduler.dart';
 import 'package:bili_novel_packer/util/html_util.dart';
 import 'package:bili_novel_packer/util/url_util.dart';
 import 'package:dio/dio.dart';
@@ -26,8 +25,6 @@ class WenkuNovelSource implements LightNovelSource {
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36";
 
   static final Lock lock = Lock();
-
-  static final Scheduler _scheduler = Scheduler(20, Duration(minutes: 1));
 
   late final Dio _dio;
 
@@ -165,9 +162,8 @@ class WenkuNovelSource implements LightNovelSource {
 
   Future<Document> _getNovelChapter(Chapter chapter) async {
     String url = chapter.chapterUrl!;
-    logger.i(
-      " ==> ${chapter.volume.volumeName} ${chapter.chapterName} ${chapter.chapterUrl}",
-    );
+    logger.i("");
+    logger.i("${chapter.chapterName} ${chapter.chapterUrl}");
     var html = (await _dio.get(url)).toString();
     var doc = parse(html);
     var outerHtml = doc.outerHtml;
@@ -176,11 +172,8 @@ class WenkuNovelSource implements LightNovelSource {
     }
     var content = doc.querySelector("#content");
     if (content == null) {
-      logger.i("GET $url ERROR");
       logger.i(html);
       throw "运行出错，请提交Issues并上传日志文件($logFilePath)，下次运行会清空日志。";
-    } else {
-      logger.i("GET $url OK");
     }
     HTMLUtil.removeElements(content.querySelectorAll("#contentdp"));
     HTMLUtil.removeElements(content.querySelectorAll("br"));
@@ -225,40 +218,11 @@ class WenkuNovelSource implements LightNovelSource {
   }
 
   @override
-  Future<Uint8List> getImage(String src) {
+  Future<Uint8List> getImage(String url) {
     return _dio
-        .get(src, options: Options(responseType: ResponseType.bytes))
+        .get(url, options: Options(responseType: ResponseType.bytes))
         .then((res) {
           return res.data as Uint8List;
         });
-    // return _scheduler.run(
-    //   (c) => httpGetBytes(
-    //     src,
-    //     headers: {
-    //       "User-Agent": userAgent,
-    //     },
-    //   ),
-    // );
   }
-
-  // Future<String> _httpGet(
-  //   String url, {
-  //   Map<String, String>? headers,
-  // }) {
-  //   return _scheduler.run((c) async {
-  //     String html = await httpGetString(
-  //       url,
-  //       headers: headers,
-  //       codec: gbk,
-  //     );
-  //     if (html.contains("rate limited")) {
-  //       logger.i("GET $url Reach rate limit");
-  //       c.pause();
-  //       await Future.delayed(Duration(seconds: 10));
-  //       c.resume();
-  //       return _httpGet(url, headers: headers);
-  //     }
-  //     return html;
-  //   });
-  // }
 }

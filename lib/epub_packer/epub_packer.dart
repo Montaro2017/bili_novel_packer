@@ -35,7 +35,7 @@ class EpubPacker {
 
   String get docTitle => _tocNcx.docTitle;
 
-  set docTitle(docTitle) {
+  set docTitle(String docTitle) {
     _tocNcx.docTitle = docTitle;
     _opf.docTitle = docTitle;
   }
@@ -91,7 +91,7 @@ class EpubPacker {
   void addArchiveFile(ArchiveFile archiveFile, [int? index]) {
     if (!_existArchiveFile(archiveFile)) {
       if (index != null) {
-        archiveFiles.insert(0, archiveFile);
+        archiveFiles.insert(index, archiveFile);
       } else {
         archiveFiles.add(archiveFile);
       }
@@ -151,7 +151,7 @@ class EpubPacker {
   }) {
     String href = path.relative(name, from: "OEBPS");
     id ??= href;
-    id = _handleId(id);
+    id = _normalized(id);
     addArchiveFile(
       ArchiveFile(name, data.length, data),
     );
@@ -161,7 +161,7 @@ class EpubPacker {
   void addStylesheet(ArchiveFile archiveFile) {
     String id = URLUtil.getFileName(archiveFile.name);
     String href = path.relative(archiveFile.name, from: "OEBPS");
-    id = _handleId(id);
+    id = _normalized(id);
     addArchiveFile(archiveFile);
     _opf.addStylesheet(ManifestItem(id, href, css));
   }
@@ -171,7 +171,7 @@ class EpubPacker {
     _tocXHtml.addNavPoint(navPoint);
   }
 
-  String _handleId(String id) {
+  String _normalized(String id) {
     List<String> symbols = ["\\", "/", "."];
     for (var symbol in symbols) {
       id = id.replaceAll(symbol, "_");

@@ -28,8 +28,8 @@ class CustomPrinter extends LogPrinter {
 
   @override
   List<String> log(LogEvent event) {
-    String date = event.time.toString();
-    String level = event.level.name.toUpperCase().padRight(5);
+    String date = event.time.toString().substring(0, 19);
+    String level = event.level.name.toUpperCase().padLeft(5);
     String message = event.message.toString();
     StackTrace stackTrace = event.stackTrace ?? StackTrace.current;
     String logger = (_getLogger(stackTrace) ?? "").padRight(30);

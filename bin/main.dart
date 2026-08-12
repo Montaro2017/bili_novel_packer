@@ -1,13 +1,23 @@
 import 'dart:io';
 
+import 'package:bili_novel_packer/console/console.dart';
+import 'package:bili_novel_packer/console/prompt.dart';
+import 'package:bili_novel_packer/console/selector.dart';
 import 'package:bili_novel_packer/light_novel/base/light_novel_model.dart';
+import 'package:bili_novel_packer/light_novel/base/light_novel_source.dart';
+import 'package:bili_novel_packer/light_novel/bili_novel/bili_novel_source.dart';
+import 'package:bili_novel_packer/light_novel/wenku_novel/wenku_novel_source.dart';
 import 'package:bili_novel_packer/logger.dart';
 import 'package:bili_novel_packer/novel_packer.dart';
-import 'package:bili_novel_packer/pack_argument.dart';
-import 'package:console/console.dart';
+import 'package:bili_novel_packer/pack_option.dart';
 
 const String gitUrl = "https://github.com/Montaro2017/bili_novel_packer";
 const String version = "0.2.46";
+
+List<LightNovelSource> sources = [
+  BiliNovelSource(),
+  WenkuNovelSource(),
+];
 
 void main(List<String> args) async {
   printWelcome();
@@ -15,113 +25,117 @@ void main(List<String> args) async {
     await start();
   } catch (e, stackTrace) {
     logger.e(e, stackTrace: stackTrace);
-    print(e);
-    print(stackTrace);
-    print("运行出错，按回车键退出.($version)");
-    Console.readLine();
+    console.writeLine(e);
+    console.writeLine(stackTrace);
+    console.write("运行出错，按回车键退出.($version)");
+    console.readLine();
   }
 }
 
 void printWelcome() {
-  print("欢迎使用轻小说打包器!");
-  print("作者: Spark");
-  print("当前版本: $version");
-  print("如遇报错请先查看能否正常访问输入网址");
-  print("否则请至开源地址携带报错信息进行反馈: $gitUrl");
+  console.writeLine("欢迎使用轻小说打包器!");
+  console.writeLine("作者: Spark");
+  console.writeLine("当前版本: $version");
+  console.writeLine("如遇报错请先查看能否正常访问输入网址");
+  console.writeLine("否则请至开源地址携带报错信息进行反馈: $gitUrl");
 }
 
 Future<void> start() async {
-  var url = readUrl();
   logger.i("version: $version");
+  var (url, source) = readUrlSource();
   logger.i("URL: $url");
-  var packer = NovelPacker.fromUrl(url);
-  print("正在加载数据...");
-  await packer.init();
-  logger.i(packer.novel);
-  printNovelDetail(packer.novel);
-  var arg = readPackArgument(packer.catalog);
-  logger.i(arg);
-  await packer.pack(arg);
-  // 防止打包完成后直接退出 无法查看到结果
-  print("全部任务已完成，按回车键退出.");
-  Console.readLine();
+
+  console.writeLine("正在加载数据...");
+  var novel = await source.getNovel(url);
+  logger.i(novel);
+  printNovelDetail(novel);
+  var catalog = await source.getNovelCatalog(novel);
+  var (option, combineVolume) = readPackOption(catalog);
+  logger.i("option: $option, combineVolume: $combineVolume");
+
+  await pack(
+    source: source,
+    novel: novel,
+    option: option,
+    combineVolume: combineVolume,
+  );
+  console.write("全部任务已完成，按回车键退出.");
+  console.readLine();
   exit(0);
 }
 
-String readUrl() {
-  String? url;
+(String, LightNovelSource) readUrlSource() {
   do {
-    print("请输入URL(支持哔哩轻小说&轻小说文库):");
-    url = stdin.readLineSync();
-  } while (url == null || url.isEmpty);
-  url = url.split(" ")[0];
-  return url;
+    console.writeLine("请输入URL(支持哔哩轻小说&轻小说文库):");
+    var input = console.readLine();
+    if (input == null || input.trim() == "") {
+      continue;
+    }
+    var s = detectSource(input);
+    if (s == null) {
+      console.writeLine("不支持的URL: $input\n");
+    } else {
+      return (input, s);
+    }
+  } while (true);
+}
+
+LightNovelSource? detectSource(String url) {
+  for (var source in sources) {
+    if (source.supportUrl(url)) {
+      return source;
+    }
+  }
+  return null;
 }
 
 void printNovelDetail(Novel novel) {
-  Console.write("\n");
-  Console.write(novel.toString());
+  console.writeLine();
+  console.write(novel.toString());
+  console.writeLine();
 }
 
-PackArgument readPackArgument(Catalog catalog) {
-  var arg = PackArgument();
-  var select = readSelectVolume(catalog);
-  arg.packVolumes = select;
+(PackOption, bool) readPackOption(Catalog catalog) {
+  var option = PackOption();
+  var combineVolume = false;
+  option.selectedVolumes = Selector(
+    options: catalog.volumes,
+    message: "请选择要下载的分卷: ",
+    suffix: "选择全部",
+  ).selectMany();
 
-  if (arg.packVolumes.length > 1) {
-    Console.write("\n");
-    arg.combineVolume =
-        Chooser(["是", "否"], message: "是否合并选择的分卷为一个文件? ").chooseSync() == "是";
+  if (option.selectedVolumes.length > 1) {
+    console.writeLine();
+    combineVolume = Prompt(
+      "是否合并选择的分卷为一个文件? ",
+      defaultValue: false,
+    ).prompt();
   }
 
-  Console.write("\n");
-  arg.addChapterTitle =
-      Chooser(["是", "否"], message: "是否在每章开头添加章节标题? ").chooseSync() == "是";
-  Console.write("\n");
-  return arg;
+  console.writeLine();
+  option.addChapterTitle = Prompt(
+    "是否在每章开头添加章节标题? ",
+    defaultValue: false,
+  ).prompt();
+  console.writeLine();
+  return (option, combineVolume);
 }
 
-List<Volume> readSelectVolume(Catalog catalog) {
-  Console.write("\n");
-  for (int i = 0; i < catalog.volumes.length; i++) {
-    Console.write("[${i + 1}] ${catalog.volumes[i].volumeName}\n");
+Future<void> pack({
+  required LightNovelSource source,
+  required Novel novel,
+  required PackOption option,
+  required bool combineVolume,
+}) async {
+  if (combineVolume && option.selectedVolumes.length <= 1) {
+    combineVolume = false;
   }
-  Console.write("---------------\n");
-  Console.write("[0] 选择全部\n");
-  Console.write(
-    "请选择需要下载的分卷(可输入如1-9进行范围选择以及如2,5单独选择):",
-  );
-  var input = Console.readLine();
-  List<Volume> selectVolumeIndex = [];
-
-  if (input == null || input == "0" || input == "") {
-    for (int i = 0; i < catalog.volumes.length; i++) {
-      selectVolumeIndex.add(catalog.volumes[i]);
-    }
-    return selectVolumeIndex;
-  }
-  input = input.trim();
-  input = input.replaceAll("，", ",");
-  input = input.replaceAll(" ", ",");
-  List<String> parts = input.split(",");
-  for (var part in parts) {
-    List<String> range = part.split("-");
-    if (range.length == 1) {
-      int index = int.parse(range[0]) - 1;
-      selectVolumeIndex.add(catalog.volumes[index]);
-    } else {
-      int from = int.parse(range[0]);
-      int to = int.parse(range[1]);
-      if (from > to) {
-        int tmp = from;
-        from = to;
-        to = tmp;
-      }
-      for (int i = from; i <= to; i++) {
-        int index = i - 1;
-        selectVolumeIndex.add(catalog.volumes[index]);
-      }
+  var packer = NovelPacker(source);
+  if (combineVolume) {
+    await packer.packCombine(source: source, novel: novel, option: option);
+  } else {
+    for (var volume in option.selectedVolumes) {
+      await packer.packVolume(source: source, volume: volume, option: option);
     }
   }
-  return selectVolumeIndex;
 }

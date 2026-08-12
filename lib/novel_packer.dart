@@ -3,129 +3,144 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:bili_novel_packer/assets/assets.dart';
+import 'package:bili_novel_packer/console/console.dart';
 import 'package:bili_novel_packer/epub_packer/epub_navigator_ncx.dart';
 import 'package:bili_novel_packer/epub_packer/epub_packer.dart';
 import 'package:bili_novel_packer/light_novel/base/light_novel_cover_detector.dart';
 import 'package:bili_novel_packer/light_novel/base/light_novel_model.dart';
 import 'package:bili_novel_packer/light_novel/base/light_novel_source.dart';
-import 'package:bili_novel_packer/light_novel/bili_novel/bili_novel_source.dart';
-import 'package:bili_novel_packer/light_novel/wenku_novel/wenku_novel_source.dart';
 import 'package:bili_novel_packer/logger.dart';
-import 'package:bili_novel_packer/pack_argument.dart';
+import 'package:bili_novel_packer/pack_option.dart';
 import 'package:bili_novel_packer/util/html_util.dart';
 import 'package:bili_novel_packer/util/sequence.dart';
 import 'package:bili_novel_packer/util/volume_util.dart';
-import 'package:console/console.dart';
 import 'package:html/dom.dart';
 
 class NovelPacker {
-  static final List<LightNovelSource> sources = [
-    BiliNovelSource(),
-    WenkuNovelSource(),
-  ];
+  final LightNovelSource source;
 
-  String url;
-  LightNovelSource lightNovelSource;
+  NovelPacker(this.source);
 
-  final Sequence _imageSequence = Sequence();
-  final Sequence _chapterSequence = Sequence();
-
-  late Novel novel;
-  late Catalog catalog;
-
-  NovelPacker._(this.lightNovelSource, this.url);
-
-  factory NovelPacker.fromUrl(String url) {
-    for (var source in sources) {
-      if (source.supportUrl(url)) {
-        return NovelPacker._(source, url);
-      }
-    }
-    throw "Unsupported url: $url";
-  }
-
-  Future<Novel> init({
-    Function(Novel novel)? novelCallback,
-    Function(Catalog catalog)? catalogCallback,
+  Future<void> packVolume({
+    required LightNovelSource source,
+    required Volume volume,
+    required PackOption option,
   }) async {
-    novel = await getNovel();
-    novelCallback?.call(novel);
-    catalog = await getCatalog();
-    catalogCallback?.call(catalog);
-    return novel;
-  }
-
-  Future<Novel> getNovel() async {
-    return lightNovelSource.getNovel(url).then((novel) => this.novel = novel);
-  }
-
-  Future<Catalog> getCatalog() async {
-    return lightNovelSource
-        .getNovelCatalog(novel)
-        .then((catalog) => this.catalog = catalog);
-  }
-
-  Future<void> pack(PackArgument arg) async {
-    if (!arg.combineVolume) {
-      for (var volume in arg.packVolumes) {
-        logger.i("开始打包 ${volume.catalog.novel.title} ${volume.volumeName}");
-        _imageSequence.reset();
-        _chapterSequence.reset();
-        await _packVolume(volume, arg.addChapterTitle);
-        logger.i("打包完成 ${volume.catalog.novel.title} ${volume.volumeName}");
-      }
-    } else {
-      // 合并分卷
-      String title = _sanitizeFileName(novel.title);
-      String path = "$title${Platform.pathSeparator}$title.epub";
-      logger.i("EPUB file: $path");
-      await _combineVolume(path, arg);
+    console.writeLine("开始打包 ${volume.volumeName}...");
+    logger.i("开始打包 ${volume.volumeName}");
+    EpubPacker packer = EpubPacker(_getEpubVolumeName(volume));
+    _fillEpubVolume(packer, volume);
+    if (option.addChapterTitle) {
+      packer.addStylesheet(styleCss());
     }
+    LightNovelCoverDetector detector = LightNovelCoverDetector();
+
+    Sequence chapterSeq = Sequence();
+    Sequence imageSeq = Sequence();
+    for (var chapter in volume.chapters) {
+      var doc = await _resolveChapter(
+        chapter: chapter,
+        packer: packer,
+        imageSeq: imageSeq,
+        addChapterTitle: option.addChapterTitle,
+        detector: detector
+      );
+      _addTitle(doc, chapter.chapterName);
+      String html = _closeTag(doc);
+      html = _appendXmlDeclare(html);
+      String chapterId = chapterSeq.next.toString().padLeft(6, "0");
+      packer.addChapter(
+        name: "OEBPS/chapter$chapterId.xhtml",
+        title: chapter.chapterName,
+        chapterContent: html,
+      );
+    }
+    // 设置封面
+    await _resolveCover(
+      volume: volume,
+      packer: packer,
+      imageSeq: imageSeq,
+      coverDetector: detector,
+    );
+    // 写出目标文件
+    packer.pack();
+    logger.i("EPUB file: ${packer.absolutePath}\n");
+    console.writeLine("打包完成: ${packer.absolutePath}\n");
   }
 
-  Future<void> _combineVolume(
-    String path,
-    PackArgument arg,
-  ) async {
-    EpubPacker packer = EpubPacker(path);
-    packer.docTitle = novel.title;
-    packer.creator = novel.author;
+  String _getEpubVolumeName(Volume volume) {
+    String title = _sanitizeFileName(volume.catalog.novel.title);
+    String volumeName = _sanitizeFileName(volume.volumeName);
+    if (volumeName == "") {
+      return "$title${Platform.pathSeparator}$title.epub";
+    }
+    if (volumeName.startsWith(title)) {
+      return "$title${Platform.pathSeparator}$volumeName.epub";
+    }
+    return "$title${Platform.pathSeparator}$title $volumeName.epub";
+  }
+
+  void _fillEpubVolume(EpubPacker packer, Volume volume) {
+    var novel = volume.catalog.novel;
+    packer.docTitle = "${volume.catalog.novel.title} ${volume.volumeName}";
+    if (volume.volumeName.startsWith(volume.catalog.novel.title)) {
+      packer.docTitle = volume.volumeName;
+    }
+    packer.creator = volume.catalog.novel.author;
     packer.source = novel.url;
     packer.publisher = novel.publisher;
     packer.subjects = novel.tags ?? [];
     packer.description = novel.description;
-    // 封面使用小说封面
-    Uint8List coverData = novel.coverUrl == null
-        ? Uint8List(0)
-        : await _getSingleImage(novel.coverUrl!);
-    String coverName =
-        "images/${_imageSequence.next.toString().padLeft(6, '0')}.jpg";
-    packer.addImage(name: "OEBPS/$coverName", data: coverData);
-    packer.cover = coverName;
+    // 当识别出丛书编号时才设置丛书名 否则丛书编号会被当成1
+    packer.calibreSeriesIndex = VolumeUtil.getSeriesIndex(volume.volumeName);
+    if (packer.calibreSeriesIndex != null) {
+      packer.calibreSeries = volume.catalog.novel.title;
+    }
+  }
 
-    if (arg.addChapterTitle) {
+  Future<void> packCombine({
+    required LightNovelSource source,
+    required Novel novel,
+    required PackOption option,
+  }) async {
+    EpubPacker packer = EpubPacker(_getEpubCombineName(novel));
+    _fillEpubCombine(packer, novel);
+
+    Sequence chapterSeq = Sequence();
+    Sequence imageSeq = Sequence();
+
+    Uint8List? coverData = novel.coverUrl == null
+        ? null
+        : await _downloadImageByUrl(novel.coverUrl!);
+    if (coverData != null && coverData.isNotEmpty) {
+      String coverId = imageSeq.next.toString().padLeft(6, '0');
+      String coverName = "images/$coverId.jpg";
+      packer.addImage(name: "OEBPS/$coverName", data: coverData);
+      packer.cover = coverName;
+    }
+
+    if (option.addChapterTitle) {
       packer.addStylesheet(styleCss());
     }
 
-    for (Volume volume in arg.packVolumes) {
+    for (Volume volume in option.selectedVolumes) {
       logger.i("开始处理: ${volume.volumeName}");
-      Console.write("正在处理: ${volume.volumeName}\n");
+      console.writeLine("正在处理: ${volume.volumeName}");
       NavPoint volumeNavPoint = NavPoint(volume.volumeName);
-      List<Future<Document>> futures = volume.chapters
-          .map(
-            (chapter) => _resolveChapter(chapter, packer, arg.addChapterTitle),
-          )
-          .toList();
 
-      List<Document> chapterDocuments = await Future.wait(futures);
-      for (int i = 0; i < chapterDocuments.length; i++) {
-        Chapter chapter = volume.chapters[i];
-        Document document = chapterDocuments[i];
-        _addTitle(document, chapter.chapterName);
-        String html = _closeTag(document);
+      for (var i = 0; i < volume.chapters.length; i++) {
+        var chapter = volume.chapters[i];
+        var doc = await _resolveChapter(
+          chapter: chapter,
+          packer: packer,
+          imageSeq: imageSeq,
+          addChapterTitle: option.addChapterTitle,
+        );
+        _addTitle(doc, chapter.chapterName);
+        String html = _closeTag(doc);
         html = _appendXmlDeclare(html);
-        String name =
-            "chapter${_chapterSequence.next.toString().padLeft(6, "0")}.xhtml";
+        String chapterId = chapterSeq.next.toString().padLeft(6, "0");
+        String name = "chapter$chapterId.xhtml";
         packer.addChapter(
           addNavPoint: false,
           name: "OEBPS/$name",
@@ -142,18 +157,39 @@ class NovelPacker {
       logger.i("处理完成: ${volume.volumeName}");
     }
     packer.pack();
-    Console.write("打包完成: ${packer.absolutePath}\n");
+    logger.i("EPUB file: ${packer.absolutePath}");
+    console.writeLine("打包完成: ${packer.absolutePath}");
   }
 
-  Future<Document> _resolveChapter(
-    Chapter chapter,
-    EpubPacker packer,
-    bool addChapterTitle, [
+  String _getEpubCombineName(Novel novel) {
+    String title = _sanitizeFileName(novel.title);
+    return "$title${Platform.pathSeparator}$title.epub";
+  }
+
+  void _fillEpubCombine(EpubPacker packer, Novel novel) {
+    packer.docTitle = novel.title;
+    packer.creator = novel.author;
+    packer.source = novel.url;
+    packer.publisher = novel.publisher;
+    packer.subjects = novel.tags ?? [];
+    packer.description = novel.description;
+  }
+
+  Future<Document> _resolveChapter({
+    required Chapter chapter,
+    required EpubPacker packer,
+    required bool addChapterTitle,
+    required Sequence imageSeq,
     LightNovelCoverDetector? detector,
-  ]) async {
-    Document doc = await lightNovelSource.getNovelChapter(chapter);
+  }) async {
+    Document doc = await source.getNovelChapter(chapter);
     // 处理图片资源
-    await _resolveImages(doc, packer, detector);
+    await _resolveImages(
+      doc: doc,
+      packer: packer,
+      imageSeq: imageSeq,
+      detector: detector,
+    );
 
     // 添加章节标题
     if (addChapterTitle) {
@@ -171,136 +207,68 @@ class NovelPacker {
     return doc;
   }
 
-  Future<Uint8List> _getSingleImage(String src) async {
-    try {
-      return await lightNovelSource.getImage(src);
-    } catch (e) {
-      print("$src 图片下载失败: $e");
-      return Uint8List(0);
-    }
-  }
-
-  Future<void> _packVolume(
-    Volume volume,
-    bool addChapterTitle,
-  ) async {
-    Console.write("开始打包 ${volume.volumeName}...\n");
-    EpubPacker packer = EpubPacker(_getEpubName(volume));
-    packer.docTitle = "${volume.catalog.novel.title} ${volume.volumeName}";
-    if (volume.volumeName.startsWith(volume.catalog.novel.title)) {
-      packer.docTitle = volume.volumeName;
-    }
-    packer.creator = volume.catalog.novel.author;
-    packer.source = novel.url;
-    packer.publisher = novel.publisher;
-    packer.subjects = novel.tags ?? [];
-    packer.description = novel.description;
-    // 当识别出丛书编号时才设置丛书名 否则丛书编号会被当成1
-    packer.calibreSeriesIndex = VolumeUtil.getSeriesIndex(volume.volumeName);
-    if (packer.calibreSeriesIndex != null) {
-      packer.calibreSeries = volume.catalog.novel.title;
-    }
-
-    LightNovelCoverDetector detector = LightNovelCoverDetector();
-
-    if (addChapterTitle) {
-      packer.addStylesheet(styleCss());
-    }
-
-    List<Future<Document>> futures = volume.chapters
-        .map(
-          (chapter) =>
-              _resolveChapter(chapter, packer, addChapterTitle, detector),
-        )
-        .toList();
-
-    List<Document> chapterDocuments = await Future.wait(futures);
-
-    // 添加章节资源
-    for (int i = 0; i < chapterDocuments.length; i++) {
-      var chapter = volume.chapters[i];
-      var document = chapterDocuments[i];
-      _addTitle(document, chapter.chapterName);
-      String html = _closeTag(document);
-      html = _appendXmlDeclare(html);
-      packer.addChapter(
-        name:
-            "OEBPS/chapter${_chapterSequence.next.toString().padLeft(6, "0")}.xhtml",
-        title: chapter.chapterName,
-        chapterContent: html,
-      );
-    }
-
-    // 设置封面
-    await _resolveCover(volume, packer, detector);
-    // 写出目标文件
-    packer.pack();
-    logger.i("EPUB file: ${packer.absolutePath}");
-    Console.write("打包完成: ${packer.absolutePath}\n\n");
-  }
-
-  Future<void> _resolveImages(
-    Document doc,
-    EpubPacker packer,
-    LightNovelCoverDetector? detector,
-  ) async {
-    // 下载图片 添加到epub中
+  Future<void> _resolveImages({
+    required Document doc,
+    required EpubPacker packer,
+    required Sequence imageSeq,
+    required LightNovelCoverDetector? detector,
+  }) async {
     List<Element> imgList = doc.querySelectorAll("img");
-    List<Future<Pair<Element, Uint8List>?>> futures = [];
     for (var img in imgList) {
-      futures.add(_resolveSingleImage(img, packer, detector));
-    }
-    List<Pair<Element, Uint8List>?> pairList = await Future.wait(futures);
-    for (Pair<Element, Uint8List>? pair in pairList) {
-      if (pair == null) continue;
-      Element img = pair.v1;
-      Uint8List imageData = pair.v2;
-      String name = "${_imageSequence.next.toString().padLeft(6, '0')}.jpg";
-      String relativeSrc = "images/$name";
+      var imageData = await _downloadImage(img);
+      if (imageData == null) {
+        continue;
+      }
+      String imageName = "${imageSeq.next.toString().padLeft(6, '0')}.jpg";
+      String relativeSrc = "images/$imageName";
       packer.addImage(name: "OEBPS/$relativeSrc", data: imageData);
-      String? src = img.attributes["src"];
-      img.attributes["src"] = relativeSrc;
+      String src = img.attributes["src"]!;
       try {
         detector?.add("OEBPS/$relativeSrc", imageData);
       } on UnsupportedImageException catch (e) {
-        print("$src ${e.message}");
+        console.writeLine("$src ${e.message}");
       }
     }
-
     HTMLUtil.wrapDuoKanImage(doc.body!);
   }
 
-  Future<Pair<Element, Uint8List>?> _resolveSingleImage(
-    Element img,
-    EpubPacker packer,
-    LightNovelCoverDetector? detector,
-  ) async {
+  Future<Uint8List?> _downloadImage(Element img) async {
     String? src = img.attributes["src"];
-    if (src == null || src.isEmpty) {
+    if (src == null || src.trim().isEmpty) {
       return null;
     }
-    Uint8List imageData = await _getSingleImage(src);
-    if (imageData.isEmpty) {
-      print("$src 图片下载失败");
-      return null;
-    }
-    return Pair(img, imageData);
+    return await _downloadImageByUrl(src);
   }
 
-  Future<void> _resolveCover(
-    Volume volume,
-    EpubPacker packer,
-    LightNovelCoverDetector coverDetector,
-  ) async {
+  Future<Uint8List?> _downloadImageByUrl(String url) async {
+    try {
+      Uint8List imageData = await source.getImage(url);
+      if (imageData.isEmpty) {
+        console.writeLine("$url 图片下载失败: 图片下载为空");
+        return null;
+      }
+      return imageData;
+    } catch (e) {
+      console.writeLine("$url 图片下载失败: $e");
+      return null;
+    }
+  }
+
+  Future<void> _resolveCover({
+    required Volume volume,
+    required EpubPacker packer,
+    required Sequence imageSeq,
+    required LightNovelCoverDetector coverDetector,
+  }) async {
     // 优先使用目录中的封面 否则自动检测
     if (volume.cover != null) {
-      Uint8List coverData = await _getSingleImage(volume.cover!);
-      if (coverData.isEmpty) {
-        print("封面下载失败");
+      Uint8List? coverData = await _downloadImageByUrl(volume.cover!);
+      if (coverData == null || coverData.isEmpty) {
+        console.writeLine("封面下载失败");
         return;
       }
-      String coverName =
-          "images/${_imageSequence.next.toString().padLeft(6, '0')}.jpg";
+      String coverId = imageSeq.next.toString().padLeft(6, '0');
+      String coverName = "images/$coverId.jpg";
       packer.addImage(name: "OEBPS/$coverName", data: coverData);
       packer.cover = coverName;
     } else {
@@ -309,18 +277,6 @@ class NovelPacker {
         packer.cover = cover.replaceFirst("OEBPS/", "");
       }
     }
-  }
-
-  String _getEpubName(Volume volume) {
-    String title = _sanitizeFileName(volume.catalog.novel.title);
-    String volumeName = _sanitizeFileName(volume.volumeName);
-    if (volumeName == "") {
-      return "$title${Platform.pathSeparator}$title.epub";
-    }
-    if (volumeName.startsWith(title)) {
-      return "$title${Platform.pathSeparator}$volumeName.epub";
-    }
-    return "$title${Platform.pathSeparator}$title $volumeName.epub";
   }
 
   String _sanitizeFileName(String name) {
@@ -335,7 +291,7 @@ class NovelPacker {
       name = name.substring(0, name.length - 1);
     }
     // 替换连续空格为一个空格
-    name = name.replaceAllMapped(RegExp("\\s+"), (_) => " ");
+    name = name.replaceAllMapped(RegExp("\\s{2,}"), (_) => " ");
     return name.trim();
   }
 
@@ -352,26 +308,18 @@ class NovelPacker {
     RegExp regExp = RegExp("(<(?:img|link).*?)>");
     Iterable<RegExpMatch> matches = regExp.allMatches(html);
     for (var match in matches) {
-      String img = match.group(0)!;
-      if (!img.endsWith("/>")) {
+      String segment = match.group(0)!;
+      if (!segment.endsWith("/>")) {
         String newImg = "${match.group(1)!}/>";
-        html = html.replaceAll(img, newImg);
+        html = html.replaceAll(segment, newImg);
       }
     }
     return html;
   }
 
   String _appendXmlDeclare(String html) {
-    String xmlDeclare = """<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE html>
-""";
-    return xmlDeclare + html;
+    String xml = '<?xml version="1.0" encoding="utf-8"?>';
+    String docType = '<!DOCTYPE html>';
+    return '$xml\n$docType\n$html';
   }
-}
-
-class Pair<V1, V2> {
-  V1 v1;
-  V2 v2;
-
-  Pair(this.v1, this.v2);
 }

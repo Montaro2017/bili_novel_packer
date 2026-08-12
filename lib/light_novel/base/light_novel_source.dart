@@ -19,5 +19,5 @@ abstract class LightNovelSource {
 
   Future<Document> getNovelChapter(Chapter chapter);
 
-  Future<Uint8List> getImage(String src);
+  Future<Uint8List> getImage(String url);
 }

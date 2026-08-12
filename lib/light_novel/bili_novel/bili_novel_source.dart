@@ -105,6 +105,7 @@ class BiliNovelSource implements LightNovelSource {
   Dio _createImageDio(BaseOptions options) {
     var dio = Dio(options.copyWith(responseType: ResponseType.bytes));
     dio.interceptors.add(RateLimitInterceptor(10, Duration(minutes: 1)));
+    dio.interceptors.add(LoggingInterceptor(printer: logger.i));
     return dio;
   }
 
@@ -114,7 +115,6 @@ class BiliNovelSource implements LightNovelSource {
   @override
   final String sourceUrl = "https://www.bilinovel.com";
 
-  /// 获取小说基本信息
   @override
   Future<Novel> getNovel(String url) async {
     String id = _getId(url);
@@ -169,7 +169,8 @@ class BiliNovelSource implements LightNovelSource {
     String html = (await _dio.get(url)).toString();
     var doc = parse(html);
     var catalog = Catalog(novel);
-    _replaceImageSrc(doc.body!);
+    // 获取卷封面前先处理图片src
+    _fixImgSrc(doc.body!);
 
     var items = _getCatalogItems(url, html, doc);
     _parseCatalogItems(catalog, doc, items);
@@ -179,7 +180,6 @@ class BiliNovelSource implements LightNovelSource {
   List<Element> _getCatalogItems(String url, String html, Document doc) {
     var items = doc.querySelectorAll(".volume-chapters>li");
     if (items.isEmpty) {
-      logger.i("GET $url");
       logger.i(html);
       throw "目录获取为空";
     }
@@ -255,9 +255,8 @@ class BiliNovelSource implements LightNovelSource {
     Document doc = Document.html(LightNovelSource.html);
 
     String chapterUrl = await _requireChapterUrl(chapter);
-    logger.i(
-      "getNovelChapter: ${chapter.chapterName} ${chapter.chapterUrl}",
-    );
+    logger.i("");
+    logger.i("${chapter.chapterName} ${chapter.chapterUrl}");
     String? nextPageUrl = chapterUrl;
     do {
       ChapterPage page = await _getChapterPage(nextPageUrl!);
@@ -294,11 +293,11 @@ class BiliNovelSource implements LightNovelSource {
 
   Document _finalizeChapterDocument(Document doc) {
     HTMLUtil.removeLineBreak(doc.body!);
-    // 处理图片 lazy load，实际 src 为 data-src。
-    _replaceImageSrc(doc.body!);
+    _normalizeImg(doc.body!);
     return doc;
   }
 
+  /// 网站早期版本缺失url的处理方法
   Future<String?> _getChapterUrl(Chapter chapter) async {
     if (chapter.chapterUrl != null && chapter.chapterUrl!.isNotEmpty) {
       return chapter.chapterUrl;
@@ -345,7 +344,9 @@ class BiliNovelSource implements LightNovelSource {
 
   // 根据目录查找上一章
   Chapter? _getPrevChapter(Catalog catalog, Chapter chapter) {
-    List<Chapter> chapters = _getAllChapters(catalog);
+    List<Chapter> chapters = catalog.volumes
+        .expand((volume) => volume.chapters)
+        .toList();
     int pos = chapters.indexOf(chapter);
     if (pos < 1) return null;
     return chapters[pos - 1];
@@ -353,14 +354,12 @@ class BiliNovelSource implements LightNovelSource {
 
   // 根据目录查找下一章
   Chapter? _getNextChapter(Catalog catalog, Chapter chapter) {
-    List<Chapter> chapters = _getAllChapters(catalog);
+    List<Chapter> chapters = catalog.volumes
+        .expand((volume) => volume.chapters)
+        .toList();
     int pos = chapters.indexOf(chapter);
     if (pos < 0 || pos >= chapters.length - 1) return null;
     return chapters[pos + 1];
-  }
-
-  List<Chapter> _getAllChapters(Catalog catalog) {
-    return catalog.volumes.expand((volume) => volume.chapters).toList();
   }
 
   @override
@@ -431,9 +430,13 @@ class BiliNovelSource implements LightNovelSource {
     if (next != null && nextUrl != null) {
       if (_isPageLink(next, _nextPageTexts)) {
         nextPage = domain + nextUrl;
-      } else if (!_isCatalog(next)){
+      } else if (!_isCatalog(next)) {
         nextChapter = domain + nextUrl;
       }
+    }
+    if (nextPage == null && nextChapter == null) {
+      logger.i("prevUrl: $prevUrl, nextUrl: $nextUrl");
+      logger.i("prev: ${prev?.outerHtml}, next: ${next?.outerHtml}");
     }
 
     return _ChapterNavigation(
@@ -460,64 +463,62 @@ class BiliNovelSource implements LightNovelSource {
   }
 
   Future<void> _restoreChapterContent(Document doc, Element content) async {
-    Map<String, int>? params = await _getShuffleParams(doc);
+    Map<String, int>? params = await _chapterLogResolver.getShuffleParams(doc);
     if (params != null) {
       BiliNovelRestore.restore(content, params);
     }
   }
 
-  Future<Map<String, int>?> _getShuffleParams(Document doc) {
-    return _chapterLogResolver.getShuffleParams(doc);
-  }
-
-  void _replaceImageSrc(Element element) {
-    List<Element> images = element.querySelectorAll("img");
-    for (var image in images) {
-      String? src = image.attributes["data-src"];
-      src ??= image.attributes["src"];
-      if (src != null) {
-        // 过滤src有问题的img
-        if (src.contains("<")) {
-          image.remove();
-          continue;
-        }
-        if (src.startsWith("//")) {
-          src = "https:$src";
-        }
-        image.attributes["src"] = src;
+  void _fixImgSrc(Element img) {
+    String? src = img.attributes["data-src"] ?? img.attributes["src"];
+    if (src != null) {
+      if (src.startsWith("data:image")) {
+        return;
       }
-      // 移除img无效属性
-      _removeImageAttr(image);
-      // 添加alt属性
-      _addAlt(image);
+      if (src.contains("<")) {
+        img.remove();
+      }
+      if (src.startsWith("//")) {
+        src = "https:$src";
+      }
+
+      if (!src.startsWith("http")) {
+        src = "$domain/$src";
+      }
+      src = src.replaceFirst("https://https://", "https://");
+      src = src.replaceAll("\ud835\ude23", "b");
+      img.attributes["src"] = src;
     }
   }
 
-  void _removeImageAttr(Element image) {
-    for (var attr in image.attributes.keys.toList()) {
-      if (!_allowedImageAttributes.contains(attr as String)) {
-        image.attributes.remove(attr);
+  void _normalizeImg(Element root) {
+    void removeImgAttr(Element img) {
+      for (var attr in img.attributes.keys.toList()) {
+        if (!_allowedImageAttributes.contains(attr as String)) {
+          img.attributes.remove(attr);
+        }
       }
     }
-  }
 
-  void _addAlt(Element image, [String? alt]) {
-    image.attributes["alt"] = alt ?? "";
+    void addImgAlt(Element img, [String alt = ""]) {
+      img.attributes["alt"] = alt;
+    }
+
+    List<Element> images = root.querySelectorAll("img");
+    for (var img in images) {
+      _fixImgSrc(img);
+      removeImgAttr(img);
+      addImgAlt(img);
+    }
   }
 
   @override
-  Future<Uint8List> getImage(String src) {
-    if (src.startsWith("data:image")) {
-      src = src.split(",")[1];
-      return Future.value(base64.decode(src));
+  Future<Uint8List> getImage(String url) {
+    if (url.startsWith("data:image")) {
+      var data = url.split(",")[1];
+      return Future.value(base64.decode(data));
     }
-    if (!src.startsWith("http")) {
-      src = "$domain/$src";
-    }
-    src = src.replaceFirst("https://https://", "https://");
-    // 处理图片url域名特殊字符 𝘣 = \ud835\ude23
-    src = src.replaceAll("\ud835\ude23", "b");
-    return _imageDio.get<Uint8List>(src).then((res) => res.data!);
+    return _imageDio.get<Uint8List>(url).then((res) => res.data!);
   }
 }
 
