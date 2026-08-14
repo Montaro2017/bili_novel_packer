@@ -96,4 +96,4 @@ dart compile exe bin/main.dart -o ./build/bili_novel_packer
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Montaro2017/bili_novel_packer&type=Date)](https://www.star-history.com/#Montaro2017/bili_novel_packer&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=Montaro2017/bili_novel_packer&type=Date)](https://star-history.dera.page/#Montaro2017/bili_novel_packer&Date)
