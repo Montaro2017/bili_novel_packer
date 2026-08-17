@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:bili_novel_packer/interceptor/logging_interceptor.dart';
 import 'package:bili_novel_packer/interceptor/rate_limit_interceptor.dart';
 import 'package:bili_novel_packer/interceptor/redirect_interceptor.dart';
+import 'package:bili_novel_packer/interceptor/retry_interceptor.dart';
 import 'package:bili_novel_packer/light_novel/base/light_novel_model.dart';
 import 'package:bili_novel_packer/light_novel/base/light_novel_source.dart';
 import 'package:bili_novel_packer/light_novel/bili_novel/bili_novel_chapterlog.dart';
@@ -17,7 +18,7 @@ import 'package:html/parser.dart';
 
 class BiliNovelSource implements LightNovelSource {
   static final RegExp _exp = RegExp(
-    "(?:linovelib|bilinovel)\\.com/(?:novel|download)/(\\d+)",
+    "(?:https?://[^/]*?(?:linovelib\\.com|bilinovel\\.(?:com|net)))/(?:novel|download)/(\\d+)",
   );
   static final String domain = "https://www.bilinovel.com";
 
@@ -97,6 +98,9 @@ class BiliNovelSource implements LightNovelSource {
   Dio _createTextDio(BaseOptions options) {
     var dio = Dio(options);
     dio.interceptors.add(RateLimitInterceptor(15, Duration(minutes: 1)));
+    dio.interceptors.add(
+      RetryInterceptor(dio: dio, delay: Duration(seconds: 3)),
+    );
     dio.interceptors.add(LoggingInterceptor(printer: logger.i));
     dio.interceptors.add(RedirectInterceptor(dio));
     return dio;
@@ -105,6 +109,9 @@ class BiliNovelSource implements LightNovelSource {
   Dio _createImageDio(BaseOptions options) {
     var dio = Dio(options.copyWith(responseType: ResponseType.bytes));
     dio.interceptors.add(RateLimitInterceptor(10, Duration(minutes: 1)));
+    dio.interceptors.add(
+      RetryInterceptor(dio: dio, delay: Duration(seconds: 3)),
+    );
     dio.interceptors.add(LoggingInterceptor(printer: logger.i));
     return dio;
   }
@@ -157,7 +164,7 @@ class BiliNovelSource implements LightNovelSource {
   String _getId(String url) {
     var match = _exp.firstMatch(url);
     if (match == null || match.groupCount < 1) {
-      throw "Unsupported url: $url";
+      throw "不支持的URL: $url";
     }
     return match.group(1)!;
   }
@@ -481,7 +488,6 @@ class BiliNovelSource implements LightNovelSource {
       if (src.startsWith("//")) {
         src = "https:$src";
       }
-
       if (!src.startsWith("http")) {
         src = "$domain/$src";
       }

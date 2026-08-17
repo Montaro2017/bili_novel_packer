@@ -8,12 +8,6 @@ final File loggerFile = File(logFilePath);
 
 Logger logger = Logger(
   printer: CustomPrinter(),
-  // printer: PrettyPrinter(
-  //   colors: false,
-  //   methodCount: 1,
-  //   dateTimeFormat: DateTimeFormat.dateAndTime,
-  //   printEmojis: false,
-  // ),
   output: FileOutput(
     file: loggerFile,
     overrideExisting: true,
@@ -54,7 +48,6 @@ class CustomPrinter extends LogPrinter {
     var lineNumber = match.group(3);
 
     return "$fileName:$lineNumber";
-    // return "";
   }
 
   bool _excludeStackTrace(String stackTraceLine) {

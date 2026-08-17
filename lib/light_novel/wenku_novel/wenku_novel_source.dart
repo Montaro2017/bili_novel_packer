@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:bili_novel_packer/interceptor/logging_interceptor.dart';
 import 'package:bili_novel_packer/interceptor/rate_limit_interceptor.dart';
+import 'package:bili_novel_packer/interceptor/retry_interceptor.dart';
 import 'package:bili_novel_packer/light_novel/base/light_novel_model.dart';
 import 'package:bili_novel_packer/light_novel/base/light_novel_source.dart';
 import 'package:bili_novel_packer/light_novel/wenku_novel/wenku_novel.dart';
@@ -48,6 +49,9 @@ class WenkuNovelSource implements LightNovelSource {
     );
     _dio = Dio(options);
     _dio.interceptors.add(RateLimitInterceptor(20, Duration(minutes: 1)));
+    _dio.interceptors.add(
+      RetryInterceptor(dio: _dio, delay: Duration(seconds: 3)),
+    );
     _dio.interceptors.add(LoggingInterceptor(printer: logger.i));
   }
 
