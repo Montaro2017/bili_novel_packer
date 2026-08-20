@@ -14,7 +14,6 @@ import 'package:dio/dio.dart';
 import 'package:gbk_codec/gbk_codec.dart';
 import 'package:html/dom.dart';
 import 'package:html/parser.dart';
-import 'package:retry/retry.dart';
 import 'package:synchronized/synchronized.dart';
 
 class WenkuNovelSource implements LightNovelSource {
@@ -155,13 +154,7 @@ class WenkuNovelSource implements LightNovelSource {
 
   @override
   Future<Document> getNovelChapter(Chapter chapter) async {
-    return retry(
-      maxAttempts: 10,
-      retryIf: (e) => true,
-      delayFactor: Duration(milliseconds: 300),
-      maxDelay: Duration(seconds: 3),
-      () => _getNovelChapter(chapter),
-    );
+    return _getNovelChapter(chapter);
   }
 
   Future<Document> _getNovelChapter(Chapter chapter) async {

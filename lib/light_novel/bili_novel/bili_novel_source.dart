@@ -27,34 +27,10 @@ class BiliNovelSource implements LightNovelSource {
 
   static const List<String> _contentSelectors = ["#acontent", ".bcontent"];
   static const int _maxChapterUrlProbeCount = 20;
-  static const List<String> _contentRemoveSelectors = [
-    "div",
-    "ins",
-    "figure",
-    "fig",
-    "br",
-    "script",
-    ".tp",
-    ".bd",
-  ];
+
   static const Set<String> _previousPageTexts = {"上一页", "上一頁"};
   static const Set<String> _nextPageTexts = {"下一页", "下一頁"};
-  static const Set<String> _allowedImageAttributes = {
-    "alt",
-    "class",
-    "dir",
-    "height",
-    "id",
-    "ismap",
-    "lang",
-    "longdesc",
-    "style",
-    "title",
-    "usemap",
-    "width",
-    "src",
-    "xml:lang",
-  };
+
   static final RegExp _pageUrlRegExp = RegExp(
     "url_previous:'(.*?)',url_next:'(.*?)'",
   );
@@ -299,6 +275,7 @@ class BiliNovelSource implements LightNovelSource {
   }
 
   Document _finalizeChapterDocument(Document doc) {
+    HTMLUtil.unescape(doc.body!);
     HTMLUtil.removeLineBreak(doc.body!);
     _normalizeImg(doc.body!);
     return doc;
@@ -463,6 +440,16 @@ class BiliNovelSource implements LightNovelSource {
   }
 
   void _cleanChapterContent(Element content) {
+    const List<String> _contentRemoveSelectors = [
+      "div",
+      "ins",
+      "figure",
+      "fig",
+      "br",
+      "script",
+      ".tp",
+      ".bd",
+    ];
     for (var selector in _contentRemoveSelectors) {
       HTMLUtil.removeElements(content.querySelectorAll(selector));
     }
@@ -499,6 +486,22 @@ class BiliNovelSource implements LightNovelSource {
 
   void _normalizeImg(Element root) {
     void removeImgAttr(Element img) {
+      const Set<String> _allowedImageAttributes = {
+        "alt",
+        "class",
+        "dir",
+        "height",
+        "id",
+        "ismap",
+        "lang",
+        "longdesc",
+        "style",
+        "title",
+        "usemap",
+        "width",
+        "src",
+        "xml:lang",
+      };
       for (var attr in img.attributes.keys.toList()) {
         if (!_allowedImageAttributes.contains(attr as String)) {
           img.attributes.remove(attr);

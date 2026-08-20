@@ -62,4 +62,46 @@ class HTMLUtil {
       }
     }
   }
+
+  static void unescape(Element element) {
+    if (element.children.isNotEmpty) {
+      for (var child in element.children) {
+        unescape(child);
+      }
+    } else {
+      element.text = _unescape(element.text);
+    }
+  }
+
+  static String _unescape(String text) {
+    _unescapeTable.forEach((key, value) {
+      text = text.replaceAll(key, value);
+    });
+    return text;
+  }
 }
+
+const Map<String, String> _unescapeTable = {
+  "&quot;": "\"",
+  "＆quot;": "\"",
+  "&amp;": "&",
+  "＆amp;": "&",
+  "&lt;": "<",
+  "＆lt;": "<",
+  "&gt;": ">",
+  "＆gt;": ">",
+  "&nbsp;": " ",
+  "＆nbsp;": " ",
+  "&middot;": "·",
+  "＆middot;": "·",
+  "&raquo;": "?",
+  "＆raquo;": "?",
+  "&frac14;": "?",
+  "＆frac14;": "?",
+  "&frac12;": "?",
+  "＆frac12;": "?",
+  "&frac34;": "?",
+  "＆frac34;": "?",
+  "&iquest;": "?",
+  "＆iquest;": "?",
+};
