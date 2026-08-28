@@ -440,7 +440,7 @@ class BiliNovelSource implements LightNovelSource {
   }
 
   void _cleanChapterContent(Element content) {
-    const List<String> _contentRemoveSelectors = [
+    const List<String> contentRemoveSelectors = [
       "div",
       "ins",
       "figure",
@@ -450,7 +450,7 @@ class BiliNovelSource implements LightNovelSource {
       ".tp",
       ".bd",
     ];
-    for (var selector in _contentRemoveSelectors) {
+    for (var selector in contentRemoveSelectors) {
       HTMLUtil.removeElements(content.querySelectorAll(selector));
     }
     HTMLUtil.removeElementsByPattern(content, r"[a-z]\d{4}");
@@ -486,7 +486,7 @@ class BiliNovelSource implements LightNovelSource {
 
   void _normalizeImg(Element root) {
     void removeImgAttr(Element img) {
-      const Set<String> _allowedImageAttributes = {
+      const Set<String> allowedImageAttributes = {
         "alt",
         "class",
         "dir",
@@ -503,7 +503,7 @@ class BiliNovelSource implements LightNovelSource {
         "xml:lang",
       };
       for (var attr in img.attributes.keys.toList()) {
-        if (!_allowedImageAttributes.contains(attr as String)) {
+        if (!allowedImageAttributes.contains(attr as String)) {
           img.attributes.remove(attr);
         }
       }

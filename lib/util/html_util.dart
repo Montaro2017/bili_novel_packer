@@ -2,6 +2,21 @@ import 'package:bili_novel_packer/extension/node_wrap_extension.dart';
 import 'package:html/dom.dart';
 
 class HTMLUtil {
+  static void _walk(Element root, Element? Function(Element e) handler) {
+    if (root.children.isNotEmpty) {
+      for (var child in root.children) {
+        _walk(child, handler);
+      }
+    } else {
+      var el = handler(root);
+      if (el == null) {
+        root.remove();
+      } else {
+        root.replaceWith(el);
+      }
+    }
+  }
+
   static void removeElements(List<Element> elements) {
     for (var element in elements) {
       element.remove();
@@ -9,13 +24,24 @@ class HTMLUtil {
   }
 
   static void removeLineBreak(Element element) {
-    if (element.children.isNotEmpty) {
-      for (var child in element.children) {
-        removeLineBreak(child);
+    _walk(element, (e) {
+      e.text = e.text.replaceAll("\n", "");
+      return e;
+    });
+  }
+
+  static void removeWhiteSpace(Element element) {
+    String remove(String text) {
+      for (var ws in _whiteSpaces) {
+        text = text.replaceAll(ws, "");
       }
-    } else {
-      element.text = element.text.replaceAll("\n", "");
+      return text;
     }
+
+    _walk(element, (e) {
+      e.text = remove(e.text);
+      return e;
+    });
   }
 
   static void wrapDuoKanImage(Element element) {
@@ -64,13 +90,10 @@ class HTMLUtil {
   }
 
   static void unescape(Element element) {
-    if (element.children.isNotEmpty) {
-      for (var child in element.children) {
-        unescape(child);
-      }
-    } else {
-      element.text = _unescape(element.text);
-    }
+    _walk(element, (e) {
+      e.text = _unescape(e.text);
+      return e;
+    });
   }
 
   static String _unescape(String text) {
@@ -80,6 +103,33 @@ class HTMLUtil {
     return text;
   }
 }
+
+const List<String> _whiteSpaces = [
+  "\u0020",
+  "\u00A0",
+  "\u2000",
+  "\u2001",
+  "\u2002",
+  "\u2003",
+  "\u2004",
+  "\u2005",
+  "\u2006",
+  "\u2007",
+  "\u2008",
+  "\u2009",
+  "\u200A",
+  "\u200B",
+  "\u200C",
+  "\u200D",
+  "\u200E",
+  "\u200F",
+  "\u2060",
+  "\uFEFF",
+  "\u180E",
+  "\u202F",
+  "\u205F",
+  "\u3000",
+];
 
 const Map<String, String> _unescapeTable = {
   "&quot;": "\"",

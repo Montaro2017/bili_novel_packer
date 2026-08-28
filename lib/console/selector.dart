@@ -8,6 +8,7 @@ typedef SelectorAdapter<T, S> =
 class Selector<T, S> {
   final String message;
   final List<T> options;
+  final S? prefix;
   final S? suffix;
   final T? defaultValue;
   late final SelectorAdapter<T, S> adapter;
@@ -48,6 +49,7 @@ class Selector<T, S> {
 
   Selector({
     required this.options,
+    this.prefix,
     this.suffix,
     required this.message,
     this.defaultValue,
@@ -92,6 +94,9 @@ class Selector<T, S> {
   void _print() {
     int len = options.length.toString().length;
     int maxLine = 0;
+    if (prefix != null) {
+      console.write(prefix.toString());
+    }
     for (var i = 1; i <= options.length; i++) {
       String index = i.toString().padLeft(len);
       String line = "[$index] ${options[i - 1].toString()}";
@@ -101,7 +106,7 @@ class Selector<T, S> {
     if (suffix != null) {
       console.writeLine("".padLeft(maxLine, "-"));
       String index = "0".padLeft(len);
-      console.writeLine("[$index] ${suffix.toString()}");
+      console.write("[$index] ${suffix.toString()}");
     }
     console.write(message);
   }
