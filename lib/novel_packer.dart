@@ -223,6 +223,7 @@ class NovelPacker {
       String relativeSrc = "images/$imageName";
       packer.addImage(name: "OEBPS/$relativeSrc", data: imageData);
       String src = img.attributes["src"]!;
+      img.attributes["src"] = relativeSrc;
       try {
         detector?.add("OEBPS/$relativeSrc", imageData);
       } on UnsupportedImageException catch (e) {
