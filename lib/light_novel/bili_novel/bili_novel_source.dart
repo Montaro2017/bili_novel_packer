@@ -204,10 +204,16 @@ class BiliNovelSource implements LightNovelSource {
     }
 
     if (item.classes.contains("volume-cover")) {
-      volume?.cover = item
-          .querySelector("a")
-          ?.querySelector("img")
-          ?.attributes["src"];
+      var coverImg = item.querySelector("a")?.querySelector("img");
+      if (coverImg != null) {
+        var coverUrl =
+            coverImg.attributes["data-src"] ?? coverImg.attributes["src"];
+        if (coverUrl?.contains("book-cover-no") ?? false) {
+          coverUrl = null;
+        } else {
+          volume?.cover = coverUrl;
+        }
+      }
       return volume;
     }
 

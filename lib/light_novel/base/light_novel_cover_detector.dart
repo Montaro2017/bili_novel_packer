@@ -14,6 +14,17 @@ class LightNovelCoverDetector {
     _imageInfoMap[name] = imageInfo;
   }
 
+  void addFirst(String name, Uint8List imageData) {
+    Map<String, ImageInfo> map = {};
+    ImageInfo imageInfo = _getImageInfo(InputMemoryStream(imageData));
+    map[name] = imageInfo;
+    for (var entry in _imageInfoMap.entries) {
+      map[entry.key] = entry.value;
+    }
+    _imageInfoMap.clear();
+    _imageInfoMap.addAll(map);
+  }
+
   String? detectCover() {
     if (_imageInfoMap.isEmpty) {
       return null;
@@ -100,7 +111,8 @@ ImageInfo _getImageInfo(InputStream inputStream) {
     return ImageInfo(width, height, mimeType);
   }
 
-  String head = "0x${c1.toRadixString(16)} 0x${c2.toRadixString(16)} 0x${c3.toRadixString(16)}";
+  String head =
+      "0x${c1.toRadixString(16)} 0x${c2.toRadixString(16)} 0x${c3.toRadixString(16)}";
   throw UnsupportedImageException("不支持的图片类型($head)");
 }
 

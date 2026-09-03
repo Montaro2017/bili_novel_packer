@@ -26,8 +26,8 @@ void main(List<String> args) async {
       logger.e(e, stackTrace: stackTrace);
       console.writeLine(e);
       console.writeLine(stackTrace);
-      console.write("运行出错，按回车键退出.($version)");
-      console.readLine();
+      console.writeLine("运行出错.($version)");
+      console.writeLine();
     }
   } while (true);
 }

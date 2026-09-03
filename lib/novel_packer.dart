@@ -43,7 +43,7 @@ class NovelPacker {
         packer: packer,
         imageSeq: imageSeq,
         addChapterTitle: option.addChapterTitle,
-        detector: detector
+        detector: detector,
       );
       _addTitle(doc, chapter.chapterName);
       String html = _closeTag(doc);
@@ -261,22 +261,19 @@ class NovelPacker {
     required Sequence imageSeq,
     required LightNovelCoverDetector coverDetector,
   }) async {
-    // 优先使用目录中的封面 否则自动检测
+    // 优先使用volume.cover 但需检测比例
     if (volume.cover != null) {
-      Uint8List? coverData = await _downloadImageByUrl(volume.cover!);
-      if (coverData == null || coverData.isEmpty) {
-        console.writeLine("封面下载失败");
-        return;
-      }
       String coverId = imageSeq.next.toString().padLeft(6, '0');
       String coverName = "images/$coverId.jpg";
-      packer.addImage(name: "OEBPS/$coverName", data: coverData);
-      packer.cover = coverName;
-    } else {
-      String? cover = coverDetector.detectCover();
-      if (cover != null) {
-        packer.cover = cover.replaceFirst("OEBPS/", "");
+      Uint8List? coverData = await _downloadImageByUrl(volume.cover!);
+      if (coverData != null && coverData.isNotEmpty) {
+        packer.addImage(name: "OEBPS/$coverName", data: coverData);
+        coverDetector.addFirst("OEBPS/$coverName", coverData);
       }
+    }
+    String? cover = coverDetector.detectCover();
+    if (cover != null) {
+      packer.cover = cover.replaceFirst("OEBPS/", "");
     }
   }
 
